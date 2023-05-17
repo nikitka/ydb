@@ -1,7 +1,7 @@
 name: Nightly-run
 on: 
   schedule:
-    - cron: "59 14 * * *"
+    - cron: "15 15 * * *"
   workflow_dispatch:
     inputs:
       test_label_regexp:
