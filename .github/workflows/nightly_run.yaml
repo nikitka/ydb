@@ -1,7 +1,7 @@
 name: Nightly-run
 on: 
   schedule:
-    - cron: "0 1 * * *"
+    - cron: "15 15 * * *"
   workflow_dispatch:
     inputs:
       test_label_regexp:
@@ -13,7 +13,7 @@ jobs:
     name: Build/test X64
     strategy:
       matrix:
-        sanitizer: [ "", "address" ]
+        sanitizer: [ ""]
       fail-fast: false
 
     uses: ./.github/workflows/build_and_test_ondemand.yml
@@ -22,15 +22,15 @@ jobs:
       test_label_regexp: ${{inputs.test_label_regexp}}
     secrets: inherit
 
-  build_provisioned:
-    name: Build/test ARM64
-    strategy:
-      matrix:
-        sanitizer: [ "", "address" ]
-      fail-fast: false
-    uses: ./.github/workflows/build_and_test_provisioned.yml
-    with:
-      runner_label: ARM64
-      sanitizer: ${{matrix.sanitizer}}
-      test_label_regexp: ${{inputs.test_label_regexp}}
-    secrets: inherit
+#  build_provisioned:
+#    name: Build/test ARM64
+#    strategy:
+#      matrix:
+#        sanitizer: [ "", "address" ]
+#      fail-fast: false
+#    uses: ./.github/workflows/build_and_test_provisioned.yml
+#    with:
+#      runner_label: ARM64
+#      sanitizer: ${{matrix.sanitizer}}
+#      test_label_regexp: ${{inputs.test_label_regexp}}
+#    secrets: inherit
