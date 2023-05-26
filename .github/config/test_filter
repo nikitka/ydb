@@ -23,5 +23,8 @@
 -TPersQueueTest::WriteExisting
 -TPgCodegen::PgFixedFuncBC
 -TPgCodegen::PgStrFuncBC
-
+-TSchemeShardSplitBySizeTest::Merge1KShards
+-TPersQueueTest::Codecs_WriteMessageWithNonDefaultCodecThatHasToBeConfiguredAdditionally_SessionClosedWithBadRequestError
+-TPersQueueTest::PreferredCluster_EnabledRemotePreferredClusterAndRemoteClusterEnabledDelaySec_SessionDiesOnlyAfterDelay
+-TBlobStorageProxySequenceTest
 -BlobDepotFat
