@@ -86,7 +86,13 @@ runs:
         --source "${{inputs.log_suffix}}" --resources testmo.json \
         --tags "$BRANCH_TAG" --tags "$EXTRA_TAG"  | \
         echo "runid=$(cat)" >> $GITHUB_OUTPUT
-
+  - name: skip muted tests
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+    shell: bash
+    run: |
+      # FIXME: remove after PR-3917726 merge
+      echo "Y_TEST_FILTER=.github/config/test_filter" >> $GITHUB_ENV
+      echo "Y_UNITTEST_FILTER=.github/config/test_filter" >> $GITHUB_ENV
   - name: Test
     shell: bash
     run: |
