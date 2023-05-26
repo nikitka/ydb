@@ -91,8 +91,8 @@ runs:
     shell: bash
     run: |
       # FIXME: remove after PR-3917726 merge
-      echo "Y_TEST_FILTER=.github/config/test_filter" >> $GITHUB_ENV
-      echo "Y_UNITTEST_FILTER=.github/config/test_filter" >> $GITHUB_ENV
+      echo "Y_TEST_FILTER=${WORKDIR}/.github/config/test_filter" >> $GITHUB_ENV
+      echo "Y_UNITTEST_FILTER=${WORKDIR}/.github/config/test_filter" >> $GITHUB_ENV
   - name: Test
     shell: bash
     run: |
