@@ -93,7 +93,7 @@ runs:
     if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
     shell: bash
     run: |
-      echo "Y_UNITTEST_FILTER_FILE=${{steps.init.output.testfilterfile}}" >> $GITHUB_ENV
+      echo "Y_UNITTEST_FILTER_FILE=${{steps.init.outputs.testfilterfile}}" >> $GITHUB_ENV
   - name: Test
     shell: bash
     continue-on-error: true
@@ -122,7 +122,7 @@ runs:
     run: |
       .github/scripts/tests/mute.py \
         --patch \
-        --filters-file ${{steps.init.output.testfilterfile}} \
+        --filter-file ${{steps.init.outputs.testfilterfile}} \
         --yunit-path $TESTREPDIR/unittests/
 
   - name: Test history upload results
