@@ -112,7 +112,7 @@ runs:
             -L '${{inputs.test_label_regexp}}' | \
       sed -e 's/\x1b\[[0-9;]*m//g' | \
       tee >(gzip --stdout > ${{steps.input.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
-      grep --line-buffered -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
+      grep -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
       tee $WORKDIR/short.log
   - name: archive unitest reports (orig)
     shell: bash
