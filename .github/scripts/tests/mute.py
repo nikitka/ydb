@@ -97,14 +97,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--filter-file", required=True)
     parser.add_argument("--yunit-path", dest="yunit_path", required=True)
-    parser.add_argument("--gtest-path", dest="gtest_path", required=True)
     parser.add_argument("--patch", action="store_true", default=False)
     args = parser.parse_args()
 
-    for p in [args.yunit_path, args.gtest_path]:
-        if not os.path.isdir(p):
-            print(f"{p} is not a directory, exit")
-            raise SystemExit(-1)
+    if not os.path.isdir(args.yunit_path):
+        print(f"{args.yunit_path} is not a directory, exit")
+        raise SystemExit(-1)
 
     # FIXME: add gtest filter file ?
     muted = parse_muted_list(args.filter_file)
@@ -114,9 +112,6 @@ def main():
         return
 
     mute_junit(muted, args.yunit_path, args.patch)
-
-    if args.gtest_path != args.yunit_path:
-        mute_junit(muted, args.gtest_path, args.patch)
 
 
 if __name__ == "__main__":
