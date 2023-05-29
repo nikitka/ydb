@@ -21,10 +21,6 @@ on:
       test_label_regexp:
         required: false
         type: string
-      install_deps:
-        required: false
-        type: boolean
-        default: true
   workflow_dispatch:
     inputs:
       runner_label:
@@ -45,10 +41,6 @@ on:
       test_label_regexp:
         required: false
         type: string
-      install_deps:
-        required: false
-        type: boolean
-        default: true
 
 jobs:
   main:
@@ -75,7 +67,6 @@ jobs:
         testman_token: ${{secrets.TESTMO_TOKEN}}
         testman_url: ${{vars.TESTMO_URL}}
         testman_project_id: ${{vars.TESTMO_PROJECT_ID}}
-        install_deps: ${{inputs.install_deps}}
     - name: Run functional tests
       if: inputs.run_functional_tests && (success() || failure()) && steps.build.conclusion != 'failure'
       uses: ./.github/actions/test_python
