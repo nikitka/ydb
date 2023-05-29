@@ -94,15 +94,9 @@ def mute_junit(muted, folder, ok_to_patch):
                 tree.write(new_fn, xml_declaration=True, encoding="UTF-8")
 
 
-def mute_ctest(log_fn, ok_to_patch):
-    for target in ctest_log_parser(log_fn):
-        pass
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--filter-file")
-    parser.add_argument("--ctest-log")
     parser.add_argument("--yunit-path", dest="yunit_path")
     parser.add_argument("--gtest-path", dest="gtest_path")
     parser.add_argument("--patch", action="store_true", default=False)
@@ -115,8 +109,6 @@ def main():
         print("nothing to mute")
         return
 
-    mute_ctest(args.ctest_log, args.patch)
-    return
     mute_junit(muted, args.yunit_path, args.patch)
 
     if args.gtest_path != args.ytest_path:
