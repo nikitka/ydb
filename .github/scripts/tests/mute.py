@@ -89,18 +89,22 @@ def mute_junit(muted, folder, ok_to_patch):
             if not ok_to_patch:
                 print(f"{fn} needs to be patched")
             else:
-                new_fn = f"{fn}.patched.xml"
-                print(f"patch {fn} to {new_fn}")
-                tree.write(new_fn, xml_declaration=True, encoding="UTF-8")
+                print(f"patch {fn}")
+                tree.write(fn, xml_declaration=True, encoding="UTF-8")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--filter-file")
-    parser.add_argument("--yunit-path", dest="yunit_path")
-    parser.add_argument("--gtest-path", dest="gtest_path")
+    parser.add_argument("--filter-file", required=True)
+    parser.add_argument("--yunit-path", dest="yunit_path", required=True)
+    parser.add_argument("--gtest-path", dest="gtest_path", required=True)
     parser.add_argument("--patch", action="store_true", default=False)
     args = parser.parse_args()
+
+    for p in [args.yunit_path, args.gtest_path]:
+        if not os.path.isdir(p):
+            print(f"{p} is not a directory, exit")
+            raise SystemExit(-1)
 
     # FIXME: add gtest filter file ?
     muted = parse_muted_list(args.filter_file)
@@ -111,7 +115,7 @@ def main():
 
     mute_junit(muted, args.yunit_path, args.patch)
 
-    if args.gtest_path != args.ytest_path:
+    if args.gtest_path != args.yunit_path:
         mute_junit(muted, args.gtest_path, args.patch)
 
 

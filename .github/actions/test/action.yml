@@ -42,11 +42,12 @@ runs:
       echo "TESTREPDIR=$(pwd)/test_reports" >> $GITHUB_ENV
       echo "TESTMO_TOKEN=${{inputs.testman_token}}" >> $GITHUB_ENV
       echo "TESTMO_URL=${{inputs.testman_url}}" >> $GITHUB_ENV
-      echo "GTEST_OUTPUT=xml:$TESTREPDIR/unittests/" >> $GITHUB_ENV
-      echo "Y_UNITTEST_OUTPUT=xml:$TESTREPDIR/unittests/" >> $GITHUB_ENV
+      echo "GTEST_OUTPUT_PATH=$TESTREPDIR/unittests/" >> $GITHUB_ENV
+      echo "Y_UNITTEST_OUTPUT_PATH=$TESTREPDIR/unittests/" >> $GITHUB_ENV
       echo "CTEST_OUTPUT=$TESTREPDIR/suites/ctest_report.xml" >> $GITHUB_ENV
       echo "logfilename=${{inputs.log_suffix}}-ctest-stdout.gz" >> $GITHUB_OUTPUT
       echo "artifactsdir=$(pwd)/artifacts" >> $GITHUB_OUTPUT
+      echo "testfilterfile=$(pwd)/.github/config/test_filter" >> $GITHUB_OUTPUT
   - name: Install Node required for Testmo CLI
     uses: actions/setup-node@v3
     with:
@@ -95,8 +96,7 @@ runs:
     if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
     shell: bash
     run: |
-      echo "Y_UNITTEST_FILTER_FILE=${WORKDIR}/.github/config/test_filter" >> $GITHUB_ENV
-      cat ${WORKDIR}/.github/config/test_filter >> $GITHUB_STEP_SUMMARY
+      echo "Y_UNITTEST_FILTER_FILE=${{steps.init.output.testfilterfile}}" >> $GITHUB_ENV
   - name: Test
     shell: bash
     continue-on-error: true
@@ -105,20 +105,29 @@ runs:
 
       echo "Stdout log (gzip archive): ${{inputs.aws_endpoint}}/${{inputs.aws_bucket}}/${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}/${{steps.init.outputs.logfilename}}" >> $GITHUB_STEP_SUMMARY
       
-      export TMPDIR=$WORKDIR/tmp
-      
       # Sed removes coloring from the output
-      ctest -j28 --timeout 1200 --force-new-ctest-process --output-on-failure --output-junit $CTEST_OUTPUT \
-            -L '${{inputs.test_label_regexp}}' | \
-      sed -e 's/\x1b\[[0-9;]*m//g' | \
-      tee >(gzip --stdout > ${{steps.input.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
-      grep -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
-      tee $WORKDIR/short.log
+      TMPDIR=$WORKDIR/tmp GTEST_OUTPUT="xml:${GTEST_OUTPUT_PATH}" Y_UNITTEST_OUTPUT="xml:${Y_UNITTEST_OUTPUT_PATH}" \ 
+        ctest -j28 --timeout 1200 --force-new-ctest-process --output-on-failure --output-junit $CTEST_OUTPUT \
+              -L '${{inputs.test_label_regexp}}' | \
+        sed -e 's/\x1b\[[0-9;]*m//g' | \
+        tee >(gzip --stdout > ${{steps.input.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
+        grep -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
+        tee $WORKDIR/short.log
   - name: archive unitest reports (orig)
     shell: bash
     run: |
       tar -C $TESTREPDIR/ -czf ${{steps.init.outputs.artifactsdir}}/reports.tar.gz .
       ls -la ${{steps.init.outputs.artifactsdir}}/reports.tar.gz
+  - name: patch junit repots
+    shell: bash
+    if: ${{ !github.event_name.startsWith('pull_request') }}
+    run: |
+      .github/scripts/tests/mute.py \
+        --patch \
+        --filters-file ${{steps.init.output.testfilterfile}} \
+        --yunit-path $Y_UNITTEST_OUTPUT_PATH \
+        --gtest-path $GTEST_OUTPUT_PATH
+
   - name: Test history upload results
     if: always() && inputs.testman_token
     continue-on-error: true
