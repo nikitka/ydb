@@ -113,11 +113,11 @@ runs:
         tee >(gzip --stdout > ${{steps.input.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
         grep -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
         tee $WORKDIR/short.log
-  - name: archive unitest reports
+  - name: archive unitest reports (orig)
     shell: bash
     run: |
-      tar -C $TESTREPDIR/ -czf ${{steps.input.outputs.artifactsdir}}/reports.tar.gz .
-      ls -la ${{steps.input.outputs.artifactsdir}}/reports.tar.gz
+      tar -C $TESTREPDIR/ -czf ${{steps.init.outputs.artifactsdir}}/reports.tar.gz .
+      ls -la ${{steps.init.outputs.artifactsdir}}/reports.tar.gz
   - name: Test history upload results
     if: always() && inputs.testman_token
     continue-on-error: true
