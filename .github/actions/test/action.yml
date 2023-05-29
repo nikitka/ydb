@@ -138,6 +138,6 @@ runs:
       aws_key_id: ${{inputs.AWS_KEY_ID }}
       aws_secret_access_key: ${{inputs.AWS_KEY_VALUE}}
       aws_bucket: ${{inputs.aws_bucket}}
-      source_dir: ${{steps.input.outputs.artifactsdir}}
+      source_dir: ${{steps.init.outputs.artifactsdir}}
       destination_dir: '${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}'
       endpoint: ${{inputs.aws_endpoint}}
