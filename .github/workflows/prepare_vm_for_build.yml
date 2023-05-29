@@ -14,13 +14,18 @@ on:
       runner_label:
         required: true
         type: string  
-        
+      install_deps:
+        required: true
+        type: boolean
+        default: true
+
 jobs:
   prepare:
     runs-on: ${{ inputs.runner_label }} # run the job on a particular runner
     steps:
     - name: Install YDB Build dependencies
       shell: bash
+      if: install_deps
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc | sudo apt-key add -
@@ -37,11 +42,13 @@ jobs:
         chmod +x ~/allurectl
     - name: Checkout ccache
       uses: actions/checkout@v3
+      if: install_deps
       with:
         repository: ccache/ccache
         path: ccache
     - name: Build ccache
       shell: bash
+      if: install_deps
       run: |
         pwd
         cd ccache
@@ -49,6 +56,9 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release ..
         make -j32
         make install
+    - name: Build ccache
+      shell: bash
+      run: |
         mkdir -p ~/.ccache
         echo 'remote_storage = http://${{secrets.rc_auth}}${{vars.REMOTE_CACHE_URL}}' > /root/.ccache/ccache.conf
         echo 'max_size = 50G' >> /root/.ccache/ccache.conf
