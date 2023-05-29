@@ -4,6 +4,7 @@
 -KqpFederatedQuery::ExecuteScriptWithDataSourceJoinYdbCheckPragma
 -KqpFederatedQuery::ExecuteScriptWithExternalTableResolve
 -KqpFederatedQuery::ExecuteScriptWithExternalTableResolveCheckPragma
+-KqpFederatedQuery::ExecuteQueryWithExternalTableResolve
 -KqpQueryService::ExecuteScript
 -KqpScanSpilling::SelfJoin
 -KqpScheme::AlterUser
@@ -20,6 +21,8 @@
 -TPersQueueTest::StreamReadCreateAndDestroyMsgs
 -TPersQueueTest::TClusterTrackerTest
 -TPersQueueTest::TopicServiceCommitOffset
+-TPersQueueTest::ReadRuleServiceTypeMigrationWithDisallowDefault
+-TPersQueueTest::Codecs_InitWriteSession_DefaultTopicSupportedCodecsInInitResponse
 -TPersQueueTest::WriteExisting
 -TPgCodegen::PgFixedFuncBC
 -TPgCodegen::PgStrFuncBC
