@@ -118,7 +118,7 @@ runs:
       ls -la ${{steps.init.outputs.artifactsdir}}/reports.tar.gz
   - name: patch junit repots
     shell: bash
-    if: ${{ !github.event_name.startsWith('pull_request') }}
+    if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
       .github/scripts/tests/mute.py \
         --patch \
