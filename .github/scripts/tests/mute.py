@@ -45,8 +45,7 @@ def mute_junit(muted, folder, ok_to_patch):
                     props = ET.Element("properties")
 
                     failure = case.find("failure")
-
-                    if failure:
+                    if failure is not None:
                         props.append(
                             ET.Element(
                                 "property",
