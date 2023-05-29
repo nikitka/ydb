@@ -6,6 +6,10 @@ on:
       runner_label:
         required: true
         type: string
+      install_deps:
+        required: true
+        type: boolean
+        default: true
     secrets:
       rc_auth:
         required: false

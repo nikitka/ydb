@@ -77,7 +77,7 @@ jobs:
     needs: provide-runner
     with:
       runner_label: ${{ needs.provide-runner.outputs.label }}
-      install_deps: false
+      install_deps: ${{ inputs.install_deps }}
     secrets:
       rc_auth: ${{ secrets.REMOTE_CACHE_AUTH }}  
 
