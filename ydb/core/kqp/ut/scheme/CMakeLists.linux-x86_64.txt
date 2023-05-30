@@ -63,7 +63,7 @@ set_yunittest_property(
   ydb-core-kqp-ut-scheme
   PROPERTY
   LABELS
-  MEDIUM
+  NMKRUN
 )
 set_yunittest_property(
   TEST
