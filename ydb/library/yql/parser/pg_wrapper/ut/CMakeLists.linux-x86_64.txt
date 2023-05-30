@@ -150,7 +150,7 @@ set_yunittest_property(
   ydb-library-yql-parser-pg_wrapper-ut
   PROPERTY
   LABELS
-  MEDIUM
+  NMKRUN
 )
 set_yunittest_property(
   TEST
