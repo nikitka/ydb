@@ -96,6 +96,7 @@ runs:
     run: |
       echo "Y_UNITTEST_FILTER_FILE=${{steps.init.outputs.testfilterfile}}" >> $GITHUB_ENV
   - name: Test
+    id: ctest
     shell: bash
     continue-on-error: true
     run: |
@@ -114,12 +115,13 @@ runs:
         tee >(gzip --stdout > ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
         grep --line-buffered -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
         tee $WORKDIR/short.log
+      echo "ctest_exitcode=$?" >> $GITHUB_OUTPUT
   - name: archive unitest reports (orig)
     shell: bash
     run: |
       tar -C $TESTREPDIR/ -czf ${{steps.init.outputs.artifactsdir}}/reports.tar.gz .
       ls -la ${{steps.init.outputs.artifactsdir}}/reports.tar.gz
-  - name: patch junit repots
+  - name: patch junit reports
     shell: bash
     if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
@@ -138,7 +140,7 @@ runs:
 
       .github/scripts/tests/extract-logs.py \
         --write-summary \
-        --url-prefix ${{steps.init.outputs.logurlprefix}}/ \
+        --url-prefix ${{steps.init.outputs.logurlprefix}}/logs/ \
         --patch-jsuite \
         --decompress \
         ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
@@ -168,3 +170,8 @@ runs:
       source_dir: artifacts
       destination_dir: '${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}'
       endpoint: ${{inputs.aws_endpoint}}
+  - name: finish
+    shell: bash
+    if: steps.ctest.outputs.outcome == 'failure'
+    run: |
+      echo "here"
