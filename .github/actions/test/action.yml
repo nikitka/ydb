@@ -126,6 +126,10 @@ runs:
         --filter-file ${{steps.init.outputs.testfilterfile}} \
         --yunit-path $TESTREPDIR/unittests/
 
+      .github/scripts/tests/ctest-mute.py --patch \
+        --decompress ${{steps.input.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
+        $TESTREPDIR/suites/ctest_report.xml
+
   - name: Test history upload results
     if: always() && inputs.testman_token
     continue-on-error: true
@@ -141,7 +145,7 @@ runs:
       testmo automation:run:complete --instance "$TESTMO_URL" --run-id ${{steps.th.outputs.runid}}
   - name: Upload S3
     uses: shallwefootball/s3-upload-action@master
-    if: always()
+    if:   always()
     with:
       aws_key_id: ${{inputs.AWS_KEY_ID }}
       aws_secret_access_key: ${{inputs.AWS_KEY_VALUE}}

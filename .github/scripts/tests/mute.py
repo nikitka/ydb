@@ -56,9 +56,7 @@ def mute_junit(muted, folder, ok_to_patch):
                                 },
                             )
                         )
-                        skipped = ET.Element(
-                            "skipped", {"message": failure.attrib["message"]}
-                        )
+                        skipped = ET.Element("skipped", {"message": failure.attrib["message"]})
                         suite_muted_fails += 1
                         case.remove(failure)
                     else:
