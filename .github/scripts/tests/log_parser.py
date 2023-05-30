@@ -51,7 +51,7 @@ def parse_yunit_fails(log):
 
         if found_fail:
             if line.startswith(("[exec] ", "-----> ")):
-                cls, method = class_method.rstrip("...").split("::")
+                cls, method = class_method.split("::")
                 yield cls, method, log[buf_start:i]
                 class_method = found_fail = found_exec = buf_start = None
         elif found_exec:
@@ -61,7 +61,7 @@ def parse_yunit_fails(log):
                 found_exec = class_method = buf_start = None
 
         if not found_exec and line.startswith("[exec] "):
-            class_method = line[7:]
+            class_method = line[7:].rstrip("...")
             found_exec = True
             buf_start = i
         i += 1

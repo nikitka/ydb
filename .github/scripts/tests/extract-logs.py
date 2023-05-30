@@ -27,45 +27,47 @@ def save_log(err_lines: List[str], out_path: Path, *parts):
 
 def extract_logs(log_fp: io.StringIO, out_path: Path, url_prefix):
     # FIXME: memory inefficient because new buffer created every time
-    # FIXME: extract summary generation to additional function
 
-    summary = [
-        "| Test  | Status | Log |",
-        "| ----: | :----: | --: |",
-    ]
-
-    urls = {}
+    summary = []
     for target, reason, ctest_buf in ctest_log_parser(log_fp):
         first_line = ctest_buf[0]
-        failed = 0
+        suite_summary = []
 
         fn = save_log(ctest_buf, out_path, target)
         log_url = make_md_url(url_prefix, fn)
-        urls[(target, target)] = log_url
-        summary.append(f"| **{target}** | {reason} | {log_url} |")
 
-        # testcases = []
+        summary.append((target, reason, log_url, suite_summary))
+
         if first_line.startswith("[==========]"):
             for classname, method, err in parse_gtest_fails(ctest_buf):
                 fn = save_log(err, out_path, classname, method)
                 log_url = make_md_url(url_prefix, fn)
-                summary.append(f"| _{ classname }::{ method }_ | | {log_url}|")
-                urls[(classname, method)] = log_url
-                failed += 1
+                suite_summary.append((classname, method, log_url))
         elif first_line.startswith("<-----"):
             for classname, method, err in parse_yunit_fails(ctest_buf):
                 fn = save_log(err, out_path, classname, method)
                 log_url = make_md_url(url_prefix, fn)
-                urls[(classname, method)] = log_url
-                summary.append(f"| _{ classname }::{ method }_ | | {log_url}|")
-                failed += 1
+                suite_summary.append((classname, method, log_url))
         else:
             pass
 
-    return summary, urls
+    return summary
+
+
+def generate_summary(summary):
+    text = [
+        "| Test  | Status | Log |",
+        "| ----: | :----: | --: |",
+    ]
+    for target, reason, target_log_url, cases in summary:
+        text.append(f"| **{target}** | {reason} | {target_log_url} |")
+        for classname, method, log_url in cases:
+            text.append(f"| _{ classname }::{ method }_ | | {log_url}|")
+    return text
 
 
 def write_summary(summary):
+    text = generate_summary(summary)
     with open(os.environ["GITHUB_STEP_SUMMARY"], "at") as fp:
         fp.write(f"List of failed test logs:\n")
         for line in summary:
@@ -89,10 +91,12 @@ def main():
         print("jsuite_paths are reqruired")
         raise SystemExit(-1)
 
-    summary, urls = extract_logs(log_reader(args.ctest_log, args.decompress), Path(args.out_log_dir), args.url_prefix)
+    summary = extract_logs(log_reader(args.ctest_log, args.decompress), Path(args.out_log_dir), args.url_prefix)
 
-    if args.write_summary and urls:
+    if args.write_summary:
         write_summary(summary)
+    else:
+        print("\n".join(generate_summary(summary)))
 
 
 if __name__ == "__main__":
