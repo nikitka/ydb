@@ -2,13 +2,11 @@
 import argparse
 import io
 import os
+import glob
+from xml.etree import ElementTree as ET
 from pathlib import Path
 from typing import List
 from log_parser import ctest_log_parser, parse_yunit_fails, parse_gtest_fails, log_reader
-
-
-def make_md_url(base, path, title=":floppy_disk:"):
-    return f"[{title}]({base}{path})"
 
 
 def make_filename(*parts):
@@ -28,78 +26,124 @@ def save_log(err_lines: List[str], out_path: Path, *parts):
 def extract_logs(log_fp: io.StringIO, out_path: Path, url_prefix):
     # FIXME: memory inefficient because new buffer created every time
 
-    summary = []
+    log_urls = []
     for target, reason, ctest_buf in ctest_log_parser(log_fp):
         first_line = ctest_buf[0]
         suite_summary = []
 
         fn = save_log(ctest_buf, out_path, target)
-        log_url = make_md_url(url_prefix, fn)
+        log_url = f"{url_prefix}{fn}"
 
-        summary.append((target, reason, log_url, suite_summary))
+        log_urls.append((target, reason, log_url, suite_summary))
 
         if first_line.startswith("[==========]"):
             for classname, method, err in parse_gtest_fails(ctest_buf):
                 fn = save_log(err, out_path, classname, method)
-                log_url = make_md_url(url_prefix, fn)
+                log_url = f"{url_prefix}{fn}"
                 suite_summary.append((classname, method, log_url))
         elif first_line.startswith("<-----"):
             for classname, method, err in parse_yunit_fails(ctest_buf):
                 fn = save_log(err, out_path, classname, method)
-                log_url = make_md_url(url_prefix, fn)
+                log_url = f"{url_prefix}{fn}"
                 suite_summary.append((classname, method, log_url))
         else:
             pass
 
-    return summary
+    return log_urls
 
 
 def generate_summary(summary):
+    icon = ":floppy_disk:"
     text = [
         "| Test  | Status | Log |",
         "| ----: | :----: | --: |",
     ]
     for target, reason, target_log_url, cases in summary:
-        text.append(f"| **{target}** | {reason} | {target_log_url} |")
+        text.append(f"| **{target}** | {reason} | [{icon}]({target_log_url}) |")
         for classname, method, log_url in cases:
-            text.append(f"| _{ classname }::{ method }_ | | {log_url}|")
+            text.append(f"| _{ classname }::{ method }_ | | [{icon}]({log_url}) |")
     return text
 
 
 def write_summary(summary):
-    if not summary:
-        return
-    text = generate_summary(summary)
     fail_count = sum([len(s[3]) for s in summary])
+    text = generate_summary(summary)
     with open(os.environ["GITHUB_STEP_SUMMARY"], "at") as fp:
         fp.write(f"List of failed test logs ({fail_count}):\n")
         for line in text:
             fp.write(f"{line}\n")
 
 
+def patch_jsuite(log_urls, ctest_path, unit_paths):
+    def add_link_property(tc, url):
+        props = tc.find("properties")
+        if props is None:
+            props = ET.Element("properties")
+            tc.append(props)
+        props.append(ET.Element("property", dict(name="url:log", value=url)))
+
+    suite_logs = {}
+    test_logs = {}
+
+    for shard_name, _, log_url, cases in log_urls:
+        suite_logs[shard_name] = log_url
+        for classname, method, test_log_url in cases:
+            test_logs[(classname, method)] = test_log_url
+
+    if ctest_path:
+        tree = ET.parse(ctest_path)
+        root = tree.getroot()
+        changed = False
+        for testcase in root.findall("testcase"):
+            log_url = suite_logs.get(testcase.attrib["classname"])
+            if log_url:
+                add_link_property(testcase, log_url)
+                changed = True
+
+        if changed:
+            print(f"patch {ctest_path}")
+            tree.write(ctest_path, xml_declaration=True, encoding="UTF-8")
+
+    for path in unit_paths:
+        for fn in glob.glob(os.path.join(path, "*.xml")):
+            tree = ET.parse(fn)
+            root = tree.getroot()
+            changed = False
+            for testsuite in root.findall("testsuite"):
+                for testcase in testsuite.findall("testcase"):
+                    cls, method = testcase.attrib["classname"], testcase.attrib["name"]
+                    log_url = test_logs.get((cls, method))
+                    if log_url:
+                        add_link_property(testcase, log_url)
+                        changed = True
+            if changed:
+                print(f"patch {fn}")
+                tree.write(fn, xml_declaration=True, encoding="UTF-8")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url-prefix", default="./")
-    parser.add_argument("--patch-jsuite", default=False, action="store_true")
     parser.add_argument("--decompress", action="store_true", default=False, help="decompress ctest log")
     parser.add_argument("--write-summary", action="store_true", default=False, help="update github summary")
+    parser.add_argument("--patch-jsuite", default=False, action="store_true")
+    parser.add_argument("--ctest-report")
+    parser.add_argument("--junit-reports-path", nargs="*")
     parser.add_argument("ctest_log")
     parser.add_argument("out_log_dir")
 
-    parser.add_argument("jsuite_paths", nargs="*")
-
     args = parser.parse_args()
 
-    if args.patch_jsuite and not args.jsuite_paths:
-        print("jsuite_paths are reqruired")
-        raise SystemExit(-1)
+    log_urls = extract_logs(log_reader(args.ctest_log, args.decompress), Path(args.out_log_dir), args.url_prefix)
 
-    summary = extract_logs(log_reader(args.ctest_log, args.decompress), Path(args.out_log_dir), args.url_prefix)
+    if args.patch_jsuite and log_urls:
+        patch_jsuite(log_urls, args.ctest_report, args.junit_reports_path)
 
     if args.write_summary:
-        write_summary(summary)
+        if log_urls:
+            write_summary(log_urls)
     else:
-        print("\n".join(generate_summary(summary)))
+        print("\n".join(generate_summary(log_urls)))
 
 
 if __name__ == "__main__":

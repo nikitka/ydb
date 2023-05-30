@@ -143,10 +143,12 @@ runs:
         --write-summary \
         --url-prefix ${{steps.init.outputs.logurlprefix}}/logs/ \
         --patch-jsuite \
+        --ctest-report $TESTREPDIR/suites/ctest_report.xml \
+        --junit-reports-path $TESTREPDIR/unittests/ \ 
         --decompress \
         ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
-        ${{steps.init.outputs.artifactsdir}}/logs/ \
-        $TESTREPDIR/unittests/
+        ${{steps.init.outputs.artifactsdir}}/logs/
+        
 
   - name: Test history upload results
     if: always() && inputs.testman_token
