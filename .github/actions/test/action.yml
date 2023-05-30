@@ -101,7 +101,11 @@ runs:
     run: |
       cd $WORKDIR/../build/ydb
 
-      echo "Stdout log (gzip archive): ${{steps.init.outputs.logurlprefix}}/${{steps.init.outputs.logfilename}}" >> $GITHUB_STEP_SUMMARY
+      cat <<EOF >> $GITHUB_STEP_SUMMARY
+      [Stdout log (gzip archive)](${{steps.init.outputs.logurlprefix}}/${{steps.init.outputs.logfilename}})"
+      |
+      [Testmo](${TESTMO_URL}/automation/runs/view/${{steps.th.outputs.runid}})
+      EOF
 
       # Sed removes coloring from the output
       
@@ -150,10 +154,10 @@ runs:
     run: |
       testmo automation:run:submit-thread \
         --instance "$TESTMO_URL" --run-id ${{steps.th.outputs.runid}} \
-        --results $TESTREPDIR/unittests/*.xml 
+        --results "$TESTREPDIR/unittests/*.xml"
       testmo automation:run:submit-thread \
         --instance "$TESTMO_URL" --run-id ${{steps.th.outputs.runid}} \
-        --results $TESTREPDIR/suites/*.xml \
+        --results "$TESTREPDIR/suites/*.xml" \
         -- cat $WORKDIR/short.log
       testmo automation:run:complete --instance "$TESTMO_URL" --run-id ${{steps.th.outputs.runid}}
   - name: Upload S3
