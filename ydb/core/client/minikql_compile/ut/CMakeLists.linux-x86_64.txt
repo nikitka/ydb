@@ -67,7 +67,7 @@ set_yunittest_property(
   ydb-core-client-minikql_compile-ut
   PROPERTY
   LABELS
-  SMALL
+  NMKRUN
 )
 set_yunittest_property(
   TEST

@@ -58,7 +58,7 @@ set_yunittest_property(
   blobstorage-ut_blobstorage-ut_blob_depot_fat
   PROPERTY
   LABELS
-  LARGE
+  NMKRUN
 )
 set_yunittest_property(
   TEST

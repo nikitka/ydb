@@ -61,7 +61,7 @@ set_yunittest_property(
   ydb-core-fq-libs-result_formatter-ut
   PROPERTY
   LABELS
-  SMALL
+  NMKRUN
 )
 set_yunittest_property(
   TEST
