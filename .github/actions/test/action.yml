@@ -45,7 +45,7 @@ runs:
       echo "logfilename=${{inputs.log_suffix}}-ctest-stdout.gz" >> $GITHUB_OUTPUT
       echo "artifactsdir=$(pwd)/artifacts" >> $GITHUB_OUTPUT
       echo "testfilterfile=$(pwd)/.github/config/test_filter" >> $GITHUB_OUTPUT
-      echo "logurlprefix=${{inputs.aws_endpoint}}/${{inputs.aws_bucket}}/${{ github.repository }}/${{github.workflow}}/${{github.run_id}}" >> GITHUB_OUTPUT
+      echo "logurlprefix=${{inputs.aws_endpoint}}/${{inputs.aws_bucket}}/${{ github.repository }}/${{github.workflow}}/${{github.run_id}}" >> $GITHUB_OUTPUT
   - name: Install Node required for Testmo CLI
     uses: actions/setup-node@v3
     with:
