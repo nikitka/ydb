@@ -69,7 +69,7 @@ def write_summary(summary):
     fail_count = sum([len(s[3]) for s in summary])
     text = generate_summary(summary)
     with open(os.environ["GITHUB_STEP_SUMMARY"], "at") as fp:
-        fp.write(f"List of failed test logs ({fail_count}):\n")
+        fp.write(f"Failed tests log files ({fail_count}):\n")
         for line in text:
             fp.write(f"{line}\n")
 
