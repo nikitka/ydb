@@ -115,6 +115,7 @@ runs:
         tee >(gzip --stdout > ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
         grep --line-buffered -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
         tee $WORKDIR/short.log
+      echo 'here'
       echo "ctest_exitcode=$?" >> $GITHUB_OUTPUT
   - name: archive unitest reports (orig)
     shell: bash
@@ -172,6 +173,6 @@ runs:
       endpoint: ${{inputs.aws_endpoint}}
   - name: finish
     shell: bash
-    if: steps.ctest.outputs.outcome == 'failure'
+    if: steps.ctest.outcome == 'failure'
     run: |
       echo "here"
