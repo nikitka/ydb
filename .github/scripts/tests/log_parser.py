@@ -44,33 +44,31 @@ def parse_gtest_fails(log):
 
 
 def parse_yunit_fails(log):
-    ilog = iter(log)
-    while 1:
-        try:
-            line = next(ilog)
-        except StopIteration:
-            break
+    i = 0
+    class_method = found_fail = found_exec = buf_start = None
+    while i < len(log):
+        line = log[i]
 
-        if not line.startswith("[FAIL] "):
-            continue
-
-        class_method = line[7:].split(" -> ", maxsplit=1)[0]
-
-        buf = [line]
-
-        while 1:
-            try:
-                line = next(ilog)
-            except StopIteration:
-                break
-
+        if found_fail:
             if line.startswith(("[exec] ", "-----> ")):
-                break
+                cls, method = class_method.rstrip("...").split("::")
+                yield cls, method, log[buf_start:i]
+                class_method = found_fail = found_exec = buf_start = None
+        elif found_exec:
+            if line.startswith("[FAIL] "):
+                found_fail = True
+            elif line.startswith("[good] "):
+                found_exec = class_method = buf_start = None
 
-            buf.append(line)
+        if not found_exec and line.startswith("[exec] "):
+            class_method = line[7:]
+            found_exec = True
+            buf_start = i
+        i += 1
 
+    if buf_start is not None:
         cls, method = class_method.split("::")
-        yield cls, method, buf
+        yield cls, method, log[buf_start:]
 
 
 def ctest_log_parser(fp: TextIO):

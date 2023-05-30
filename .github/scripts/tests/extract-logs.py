@@ -17,7 +17,7 @@ def make_filename(*parts):
 
 def save_log(err_lines: List[str], out_path: Path, *parts):
     fn = make_filename(*parts)
-
+    print(f"write {fn} for {'::'.join(parts)}")
     with open(out_path.joinpath(fn), "wt") as fp:
         for line in err_lines:
             fp.write(f"{line}\n")
