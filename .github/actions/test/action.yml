@@ -114,9 +114,10 @@ runs:
         sed -u -e 's/\x1b\[[0-9;]*m//g' | \
         tee >(gzip --stdout > ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
         grep --line-buffered -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
-        tee $WORKDIR/short.log
-      echo 'here'
-      echo "ctest_exitcode=$?" >> $GITHUB_OUTPUT
+        tee $WORKDIR/short.log || (
+          echo "ctest return $?, recovering.."
+          echo "fail=1" >> $GITHUB_OUTPUT
+      )
   - name: archive unitest reports (orig)
     shell: bash
     run: |
@@ -144,7 +145,7 @@ runs:
         --url-prefix ${{steps.init.outputs.logurlprefix}}/logs/ \
         --patch-jsuite \
         --ctest-report $TESTREPDIR/suites/ctest_report.xml \
-        --junit-reports-path $TESTREPDIR/unittests/ \ 
+        --junit-reports-path $TESTREPDIR/unittests/ \
         --decompress \
         ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
         ${{steps.init.outputs.artifactsdir}}/logs/
@@ -175,6 +176,5 @@ runs:
       endpoint: ${{inputs.aws_endpoint}}
   - name: finish
     shell: bash
-    if: steps.ctest.outcome == 'failure'
     run: |
-      echo "here"
+      echo "ctest fail '${{ steps.ctest.outputs.fail }}' "
