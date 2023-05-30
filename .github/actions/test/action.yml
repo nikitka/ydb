@@ -134,7 +134,7 @@ runs:
     shell: bash
     run: |
       mkdir ${{steps.init.outputs.artifactsdir}}/logs/
-      
+
       .github/scripts/tests/extract-logs.py \
         --write-summary \
         --url-prefix ${{steps.init.outputs.logurlprefix}}/ \
@@ -142,7 +142,7 @@ runs:
         --decompress \
         ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
         ${{steps.init.outputs.artifactsdir}}/logs/ \
-        $TESTREPDIR/unittests/ 
+        $TESTREPDIR/unittests/
 
   - name: Test history upload results
     if: always() && inputs.testman_token
@@ -158,11 +158,12 @@ runs:
       testmo automation:run:complete --instance "$TESTMO_URL" --run-id ${{steps.th.outputs.runid}}
   - name: Upload S3
     uses: shallwefootball/s3-upload-action@master
-    if:   always()
+    if: always()
     with:
       aws_key_id: ${{inputs.AWS_KEY_ID }}
       aws_secret_access_key: ${{inputs.AWS_KEY_VALUE}}
       aws_bucket: ${{inputs.aws_bucket}}
-      source_dir: ${{steps.init.outputs.artifactsdir}}
+      # FIXME: must be constant here
+      source_dir: artifacts
       destination_dir: '${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}'
       endpoint: ${{inputs.aws_endpoint}}
