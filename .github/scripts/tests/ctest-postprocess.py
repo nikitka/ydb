@@ -4,7 +4,7 @@ from typing import TextIO
 import xml.etree.ElementTree as ET
 
 from log_parser import ctest_log_parser, log_reader
-from mute_utils import mute_target, update_suite_info
+from mute_utils import mute_target, remove_failure, update_suite_info
 
 
 def find_targets_to_remove(log_fp):
@@ -16,7 +16,7 @@ def postprocess_ctest(log_fp: TextIO, ctest_junit_report, mute_list, dry_run):
 
     tree = ET.parse(ctest_junit_report)
     root = tree.getroot()
-    n_removed = n_removed_time = n_remove_failures = n_skipped = 0
+    n_remove_failures = n_skipped = 0
 
     for testcase in root.findall("testcase"):
         target = testcase.attrib["classname"]
@@ -27,15 +27,13 @@ def postprocess_ctest(log_fp: TextIO, ctest_junit_report, mute_list, dry_run):
                 n_remove_failures += 1
                 n_skipped += 1
         elif target in to_remove:
-            n_removed_time += float(testcase.attrib["time"])
-            n_removed += 1
             n_remove_failures += 1
-            root.remove(testcase)
+            remove_failure(testcase)
 
-    if n_removed or n_skipped:
-        update_suite_info(root, n_removed, n_remove_failures, n_skipped, n_removed_time)
+    if n_remove_failures:
+        update_suite_info(root, n_remove_failures, n_skipped)
 
-        print(f"{'(dry-run) ' if dry_run else ''}update {ctest_junit_report} ({n_skipped}/{n_removed} skipped/removed)")
+        print(f"{'(dry-run) ' if dry_run else ''}update {ctest_junit_report}")
 
         if not dry_run:
             tree.write(ctest_junit_report, xml_declaration=True, encoding="UTF-8")

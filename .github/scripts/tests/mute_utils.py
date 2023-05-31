@@ -15,6 +15,16 @@ def mute_target(node):
     return True
 
 
+def remove_failure(node):
+    failure = node.find("failure")
+
+    if failure is not None:
+        node.remove(failure)
+        return True
+
+    return False
+
+
 def op_attr(node, attr, op, value):
     v = int(node.get(attr, 0))
     node.set(attr, str(op(v, value)))
@@ -28,15 +38,9 @@ def dec_attr(node, attr, value):
     return op_attr(node, attr, operator.sub, value)
 
 
-def update_suite_info(root, n_removed=None, n_remove_failures=None, n_skipped=None, n_removed_time=None):
-    if n_removed:
-        dec_attr(root, "tests", n_removed)
-
+def update_suite_info(root, n_remove_failures=None, n_skipped=None):
     if n_remove_failures:
         dec_attr(root, "failures", n_remove_failures)
-
-    if n_removed_time:
-        dec_attr(root, "time", n_removed_time)
 
     if n_skipped:
         inc_attr(root, "skipped", n_skipped)
