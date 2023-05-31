@@ -96,6 +96,9 @@ runs:
     shell: bash
     run: |
       echo "Y_UNITTEST_FILTER_FILE=${{steps.init.outputs.testfilterfile}}" >> $GITHUB_ENV
+      if [ -s ${{steps.init.outputs.testshardfilterfile}} ]; then
+        echo CTEST_SKIP_SHARDS="($(awk 'NF' ${{steps.init.outputs.testshardfilterfile}} | paste -s -d '|' -))" >> $GITHUB_ENV
+      fi
   - name: Test
     id: ctest
     shell: bash
@@ -111,7 +114,7 @@ runs:
       TMPDIR=$WORKDIR/tmp GTEST_OUTPUT="xml:$TESTREPDIR/unittests/" Y_UNITTEST_OUTPUT="xml:$TESTREPDIR/unittests/" \
         ctest -j28 --timeout 1200 --force-new-ctest-process --output-on-failure \
               --output-junit $TESTREPDIR/suites/ctest_report.xml \
-              -L '${{inputs.test_label_regexp}}' | \
+              -L '${{inputs.test_label_regexp}}' ${CTEST_SKIP_SHARDS:+-E \'$CTEST_SKIP_SHRDS\'} | \
         sed -u -e 's/\x1b\[[0-9;]*m//g' | \
         tee >(gzip --stdout > ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}}) | \
         grep --line-buffered -E '(Test\s*#.*\*\*\*|\[FAIL\])|.*tests passed,.*tests failed out of' | \
@@ -124,7 +127,7 @@ runs:
     run: |
       tar -C $TESTREPDIR/ -czf ${{steps.init.outputs.artifactsdir}}/reports.tar.gz .
       ls -la ${{steps.init.outputs.artifactsdir}}/reports.tar.gz
-  - name: patch junit reports
+  - name: postprocess junit reports
     shell: bash
     if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
