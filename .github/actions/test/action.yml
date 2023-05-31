@@ -44,7 +44,8 @@ runs:
       echo "TESTMO_URL=${{inputs.testman_url}}" >> $GITHUB_ENV
       echo "logfilename=${{inputs.log_suffix}}-ctest-stdout.gz" >> $GITHUB_OUTPUT
       echo "artifactsdir=$(pwd)/artifacts" >> $GITHUB_OUTPUT
-      echo "testfilterfile=$(pwd)/.github/config/test_filter" >> $GITHUB_OUTPUT
+      echo "testfilterfile=$(pwd)/.github/config/muted_test.txt" >> $GITHUB_OUTPUT
+      echo "testshardfilterfile=$(pwd)/.github/config/muted_shard.txt" >> $GITHUB_OUTPUT
       echo "logurlprefix=${{inputs.aws_endpoint}}/${{inputs.aws_bucket}}/${{ github.repository }}/${{github.workflow}}/${{github.run_id}}" >> $GITHUB_OUTPUT
   - name: Install Node required for Testmo CLI
     uses: actions/setup-node@v3
@@ -127,13 +128,14 @@ runs:
     shell: bash
     if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
-      .github/scripts/tests/mute.py \
-        --patch \
+      .github/scripts/tests/junit-postprocess.py \
         --filter-file ${{steps.init.outputs.testfilterfile}} \
-        --yunit-path $TESTREPDIR/unittests/
+        $TESTREPDIR/unittests/
 
-      .github/scripts/tests/ctest-mute.py --patch \
-        --decompress ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
+      .github/scripts/tests/ctest-postprocess.py \
+        --filter-file ${{steps.init.outputs.testshardfilterfile}} \
+        --decompress \
+        ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
         $TESTREPDIR/suites/ctest_report.xml
   - name: extract log output
     shell: bash
