@@ -131,15 +131,35 @@ runs:
     shell: bash
     if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
+      echo "::grop:junit-postprocess"
+      
       .github/scripts/tests/junit-postprocess.py \
         --filter-file ${{steps.init.outputs.testfilterfile}} \
         $TESTREPDIR/unittests/
+
+      echo "::endgroup::"
+
+      echo "::grop:ctest-postprocess"
 
       .github/scripts/tests/ctest-postprocess.py \
         --filter-file ${{steps.init.outputs.testshardfilterfile}} \
         --decompress \
         ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
         $TESTREPDIR/suites/ctest_report.xml
+
+      echo "::endgroup::"
+  - name: postprocess ctest report
+    shell: bash
+    if: ${{ startsWith(github.event_name, 'pull_request') }}
+    run: |
+      echo "::grop:ctest-postprocess"
+
+      .github/scripts/tests/ctest-postprocess.py \
+        --decompress \
+        ${{steps.init.outputs.artifactsdir}}/${{steps.init.outputs.logfilename}} \
+        $TESTREPDIR/suites/ctest_report.xml
+
+      echo "::endgroup::"
   - name: extract log output
     shell: bash
     run: |
@@ -182,4 +202,4 @@ runs:
   - name: finish
     shell: bash
     run: |
-      echo "ctest fail '${{ steps.ctest.outputs.fail }}' "
+      .github/scripts/tests/check-failed.py $TESTREPDIR/unittests/ $TESTREPDIR/suites/

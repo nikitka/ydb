@@ -39,6 +39,7 @@ def mute_junit(muted, folder, dry_run):
             for case, cls, method in case_iterator(suite):
                 if cls in muted_cls or (cls, method) in muted_methods:
                     if mute_target(case):
+                        print(f"mute {cls}::{method}")
                         muted_cnt += 1
 
             if muted_cnt:
