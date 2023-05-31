@@ -131,7 +131,7 @@ runs:
     shell: bash
     if: ${{ !startsWith(github.event_name, 'pull_request') }}
     run: |
-      echo "::grop:junit-postprocess"
+      echo "::group::junit-postprocess"
       
       .github/scripts/tests/junit-postprocess.py \
         --filter-file ${{steps.init.outputs.testfilterfile}} \
@@ -139,7 +139,7 @@ runs:
 
       echo "::endgroup::"
 
-      echo "::grop:ctest-postprocess"
+      echo "::group::ctest-postprocess"
 
       .github/scripts/tests/ctest-postprocess.py \
         --filter-file ${{steps.init.outputs.testshardfilterfile}} \
@@ -152,7 +152,7 @@ runs:
     shell: bash
     if: ${{ startsWith(github.event_name, 'pull_request') }}
     run: |
-      echo "::grop:ctest-postprocess"
+      echo "::group::ctest-postprocess"
 
       .github/scripts/tests/ctest-postprocess.py \
         --decompress \
