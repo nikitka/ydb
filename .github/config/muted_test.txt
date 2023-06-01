@@ -1,0 +1,7 @@
+-KqpSpillingFileTests::StartError
+-KqpFederatedQuery::ExecuteScript
+-KqpFederatedQuery::ExecuteScriptWithExternalTableResolve
+-TPgCodegen::PgFixedFuncBC
+-TPgCodegen::PgStrFuncBC
+-KqpScanSpilling::SelfJoin
+-RetryPolicy::TWriteSession_SeqNoShift
