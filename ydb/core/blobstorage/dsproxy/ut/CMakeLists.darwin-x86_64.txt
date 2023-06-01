@@ -70,7 +70,7 @@ set_yunittest_property(
   ydb-core-blobstorage-dsproxy-ut
   PROPERTY
   LABELS
-  MEDIUM
+  NMKRUN
 )
 set_yunittest_property(
   TEST

@@ -60,7 +60,7 @@ set_yunittest_property(
   ydb-core-fq-libs-common-ut
   PROPERTY
   LABELS
-  SMALL
+  NMKRUN
 )
 set_yunittest_property(
   TEST
