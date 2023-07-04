@@ -1,3 +1,6 @@
+remove me, this is error
+
+
 set(CMAKE_C_COMPILER clang-12)
 set(CMAKE_CXX_COMPILER clang++-12)
 set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -rdynamic")
