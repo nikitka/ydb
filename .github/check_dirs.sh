@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "hello"
+
 GIT_URL=$1
 
 set -e
