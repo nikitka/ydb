@@ -126,11 +126,11 @@ jobs:
         script: |
           let fs = require('fs').promises;
           var summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
-          console.log('summary', summary);
+          summary = summary.toString() + "hello world?";
           
           await github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: summary.toString()
+            body: summary
           });
