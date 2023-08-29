@@ -120,7 +120,7 @@ jobs:
       - build_and_test
     steps:
     - name: add PR comment
-      if: always() && github.event_name == 'pull_request_target'
+      if: ${{ always() && github.event_name == 'pull_request_target' }}
       uses: actions/github-script@v6
       with:
         script: |
