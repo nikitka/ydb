@@ -2,6 +2,7 @@
 import argparse
 import dataclasses
 import os, sys
+from github import Repository, PullRequest
 from enum import Enum
 from itertools import groupby
 from operator import attrgetter
@@ -151,6 +152,28 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths, ):
     summary.append(f"[^1]: All mute rules are defined [here]({github_srv}/{repo}/tree/main/.github/config).")
 
     write_summary(lines=summary)
+
+
+def update_pr_comment(commit: str, pr: PullRequest):
+    header = f"<!-- status {pr.id} -->"
+    body = (
+        header,
+        f"Hi! Test results for commit {commit}"
+    )
+
+    comment = None
+    for c in pr.get_issue_comments():
+        if c.bo.startswith(header):
+            comment = c
+            break
+
+    if comment is None:
+        comment = pr.create_issue_comment(body)
+
+    if comment.body == body:
+        return
+
+    comment.edit(body)
 
 
 def main():
