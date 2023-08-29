@@ -126,7 +126,7 @@ jobs:
         script: |
           let fs = require('fs');
           var summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
-          summary += " HELLO WORLD';
+          summary += " HELLO WORLD";
           
           await github.rest.issues.createComment({
             issue_number: context.issue.number,
