@@ -326,6 +326,22 @@ runs:
         "Unittests" unittest.html $TESTREPDIR/unittests \
         "Unittest binary runs" ctest.html $TESTREPDIR/suites \
         "Functional tests" functional.html $PYTESTREPDIR
+      
+  - name: add PR comment
+    uses: actions/github-script@v6
+    if: always() && github.event_name == 'pull_request_target'
+    with:
+      script: |
+        let fs = require('fs').promises;
+        var summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
+        summary = summary.toString();
+        
+        await github.rest.issues.createComment({
+          issue_number: context.issue.number,
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          body: summary
+        });
 
 
 #  - name: sync test results to s3
