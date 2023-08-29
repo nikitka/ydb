@@ -327,13 +327,19 @@ runs:
         "Unittest binary runs" ctest.html $TESTREPDIR/suites \
         "Functional tests" functional.html $PYTESTREPDIR
       
+      {
+        echo 'TEST_SUMMARY<<EOF'
+        cat $GITHUB_STEP_SUMMARY
+        echo EOF
+      } >> $GITHUB_ENV
+      
   - name: add PR comment
     uses: actions/github-script@v6
     if: always() && github.event_name == 'pull_request_target'
     with:
       script: |
         let fs = require('fs').promises;
-        var summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
+        var summary = await fs.readFile(process.env.TEST_SUMMARY);
         summary = summary.toString();
         
         await github.rest.issues.createComment({
