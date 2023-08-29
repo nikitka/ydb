@@ -327,21 +327,6 @@ runs:
         "Unittest binary runs" ctest.html $TESTREPDIR/suites \
         "Functional tests" functional.html $PYTESTREPDIR
 
-  - name: add PR comment
-    if: always() && github.event_name == 'pull_request_target'
-    uses: actions/github-script@v6
-    with:
-      script: |
-        let fs = require('fs');
-        let summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
-        
-        github.rest.issues.createComment({
-          issue_number: context.issue.number,
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          body: summary
-        });
-
 
 #  - name: sync test results to s3
 #    if: always()

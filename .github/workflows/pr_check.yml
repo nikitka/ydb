@@ -113,3 +113,21 @@ jobs:
       run_functional_tests: false
       test_label_regexp: '(SMALL|MEDIUM)'
     secrets: inherit
+    
+  add-summary-comment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: add PR comment
+      if: always() && github.event_name == 'pull_request_target'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          let fs = require('fs');
+          let summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });
