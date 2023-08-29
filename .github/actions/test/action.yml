@@ -314,11 +314,12 @@ runs:
         "Functional tests" functional.html $PYTESTREPDIR
 
   - name: add PR comment
-    if: github.event_name == 'pull_request_target'
+    if: always() && github.event_name == 'pull_request_target'
     uses: actions/github-script@v6
     with:
       script: |
-        let summary = await fs.readFile(process.env[core.summary.SUMMARY_ENV_VAR]);
+        let fs = require('fs');
+        let summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
         
         github.rest.issues.createComment({
           issue_number: context.issue.number,
