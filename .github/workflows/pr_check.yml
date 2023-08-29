@@ -117,16 +117,16 @@ jobs:
   add-summary-comment:
     runs-on: ubuntu-latest
     needs:
-      - check-running-allowed
+      - build_and_test
     steps:
     - name: add PR comment
       if: always() && github.event_name == 'pull_request_target'
       uses: actions/github-script@v6
       with:
         script: |
-          let fs = require('fs');
+          let fs = require('fs').promises;
           var summary = await fs.readFile(process.env.GITHUB_STEP_SUMMARY);
-          summary += " HELLO WORLD";
+          console.log('summary', summary);
           
           await github.rest.issues.createComment({
             issue_number: context.issue.number,
