@@ -308,7 +308,7 @@ runs:
       echo "30 [Functional test log]($S3_URL_PREFIX/${{steps.init.outputs.pytest-logfilename}})" >> $SUMMARY_LINKS
 
       cd $TESTREPDIR
-      curl -O https://storage.yandexcloud.net/ydb-tech-ci/ydb-platform/ydb/Nightly-run/6006816275/x86_64/reports.tar.gz
+      curl -O https://storage.yandexcloud.net/ydb-tech-ci/ydb-platform/ydb/Nightly-run/6019388294/x86_64/reports.tar.gz
       tar -xzf reports.tar.gz
   
   - name: write tests summary
