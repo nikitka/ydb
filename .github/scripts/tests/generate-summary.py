@@ -160,7 +160,7 @@ def update_pr_comment(pr: PullRequest, summary: List[str]):
     header = f"<!-- status {pr.number} -->"
     body = [
         header,
-        f"Hi! Test results for commit {pr.head}:"
+        f"Hi! Test results for commit {pr.head.sha}:"
     ]
     body.extend(summary)
     body = '\n'.join(body)
