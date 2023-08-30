@@ -319,7 +319,7 @@ runs:
       cat $SUMMARY_LINKS | python3 -c 'import sys; print(" | ".join([v for _, v in sorted([l.strip().split(" ", 1) for l in sys.stdin], key=lambda a: (int(a[0]), a))]))' >> $GITHUB_STEP_SUMMARY
       
       mkdir $ARTIFACTS_DIR/summary/
-      
+      env > /tmp/env
       .github/scripts/tests/generate-summary.py \
         --summary-out-path $ARTIFACTS_DIR/summary/ \
         --summary-url-prefix $S3_URL_PREFIX/summary/ \
@@ -327,24 +327,6 @@ runs:
         "Unittest binary runs" ctest.html $TESTREPDIR/suites \
         "Functional tests" functional.html $PYTESTREPDIR
       
-      {
-        echo 'TEST_SUMMARY<<EOF'
-        cat $GITHUB_STEP_SUMMARY
-        echo EOF
-      } >> $GITHUB_ENV
-      
-  - name: add PR comment
-    uses: actions/github-script@v6
-    if: always() && github.event_name == 'pull_request_target'
-    with:
-      script: |
-        await github.rest.issues.createComment({
-          issue_number: context.issue.number,
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          body: process.env.TEST_SUMMARY
-        });
-
 
 #  - name: sync test results to s3
 #    if: always()
