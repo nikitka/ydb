@@ -333,7 +333,7 @@ runs:
         echo EOF
       } >> $GITHUB_ENV
       
-      cp $GITHUB_EVENT_NAME /tmp/githu-event.json
+      cp $GITHUB_EVENT_PATH /tmp/githu-event.json
 
   - name: add PR comment
     uses: actions/github-script@v6
