@@ -4,6 +4,7 @@ import dataclasses
 import os
 import json
 import sys
+from github import Github, Auth as GithubAuth
 from github.PullRequest import PullRequest
 from enum import Enum
 from itertools import groupby
@@ -155,21 +156,25 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths, ):
     return summary
 
 
-def update_pr_comment(commit: str, pr: PullRequest):
+def update_pr_comment(pr: PullRequest, summary: List[str]):
     header = f"<!-- status {pr.number} -->"
-    body = (
+    body = [
         header,
-        f"Hi! Test results for commit {commit}"
-    )
+        f"Hi! Test results for commit {pr.head}:"
+    ]
+    body.extend(summary)
+    body = '\n'.join(body)
 
     comment = None
+
     for c in pr.get_issue_comments():
-        if c.bo.startswith(header):
+        if c.body.startswith(header):
             comment = c
             break
 
     if comment is None:
-        comment = pr.create_issue_comment(body)
+        pr.create_issue_comment(body)
+        return
 
     if comment.body == body:
         return
@@ -194,9 +199,13 @@ def main():
     summary = gen_summary(args.summary_url_prefix, args.summary_out_path, title_path)
     write_summary(lines=summary)
 
-    # if os.environ.get('GITHUB_EVENT_NAME') in ('pull_request', 'pull_request_target'):
-    #     with open(os.environ['GITHUB_EVENT_PATH']) as fp:
-    #         event = json.load(fp)
+    if os.environ.get('GITHUB_EVENT_NAME') in ('pull_request', 'pull_request_target'):
+        gh = Github(auth=GithubAuth.Token(os.environ['GITHUB_TOKEN']))
+
+        with open(os.environ['GITHUB_EVENT_PATH']) as fp:
+            event = json.load(fp)
+        pr = gh.create_from_raw_data(PullRequest, event['pull_request'])
+        update_pr_comment(pr, summary)
 
 
 

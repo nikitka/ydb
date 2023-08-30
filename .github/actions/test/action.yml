@@ -333,8 +333,6 @@ runs:
         echo EOF
       } >> $GITHUB_ENV
       
-      cp $GITHUB_EVENT_PATH /tmp/githu-event.json
-
   - name: add PR comment
     uses: actions/github-script@v6
     if: always() && github.event_name == 'pull_request_target'
