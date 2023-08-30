@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import dataclasses
-import os, sys
-from github import Repository, PullRequest
+import os
+import json
+import sys
+from github.PullRequest import PullRequest
 from enum import Enum
 from itertools import groupby
 from operator import attrgetter
@@ -150,12 +152,11 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths, ):
 
     summary.append("\n")
     summary.append(f"[^1]: All mute rules are defined [here]({github_srv}/{repo}/tree/main/.github/config).")
-
-    write_summary(lines=summary)
+    return summary
 
 
 def update_pr_comment(commit: str, pr: PullRequest):
-    header = f"<!-- status {pr.id} -->"
+    header = f"<!-- status {pr.number} -->"
     body = (
         header,
         f"Hi! Test results for commit {commit}"
@@ -190,7 +191,13 @@ def main():
     paths = iter(args.args)
     title_path = list(zip(paths, paths, paths))
 
-    gen_summary(args.summary_url_prefix, args.summary_out_path, title_path)
+    summary = gen_summary(args.summary_url_prefix, args.summary_out_path, title_path)
+    write_summary(lines=summary)
+
+    # if os.environ.get('GITHUB_EVENT_NAME') in ('pull_request', 'pull_request_target'):
+    #     with open(os.environ['GITHUB_EVENT_PATH']) as fp:
+    #         event = json.load(fp)
+
 
 
 if __name__ == "__main__":
