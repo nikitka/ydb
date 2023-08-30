@@ -321,7 +321,7 @@ runs:
       cat $SUMMARY_LINKS | python3 -c 'import sys; print(" | ".join([v for _, v in sorted([l.strip().split(" ", 1) for l in sys.stdin], key=lambda a: (int(a[0]), a))]))' >> $GITHUB_STEP_SUMMARY
       
       mkdir $ARTIFACTS_DIR/summary/
-      env > /tmp/env
+
       .github/scripts/tests/generate-summary.py \
         --summary-out-path $ARTIFACTS_DIR/summary/ \
         --summary-url-prefix $S3_URL_PREFIX/summary/ \

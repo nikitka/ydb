@@ -48,6 +48,107 @@ class TestResult:
     def full_name(self):
         return f"{self.classname}/{self.name}"
 
+    @classmethod
+    def from_junit(cls, testcase):
+        classname, name = testcase.get("classname"), testcase.get("name")
+        if testcase.find("failure") is not None:
+            status = TestStatus.FAIL
+        elif testcase.find("error") is not None:
+            status = TestStatus.ERROR
+        elif get_property_value(testcase, "mute") is not None:
+            status = TestStatus.MUTE
+        elif testcase.find("skipped") is not None:
+            status = TestStatus.SKIP
+        else:
+            status = TestStatus.PASS
+
+        return cls(classname, name, status)
+
+
+class TestSummaryLine:
+    def __init__(self, title):
+        self.title = title
+        self.tests = []
+        self.is_failed = False
+        self.report_fn = self.report_url = None
+        self.counter = {s: 0 for s in TestStatus}
+
+    def add(self, test: TestResult):
+        self.is_failed |= test.status in (TestStatus.ERROR, TestStatus.FAIL)
+        self.counter[test.status] += 1
+        self.tests.append(test)
+
+    def add_report(self, fn, url):
+        self.report_fn = fn
+        self.report_url = url
+
+    @property
+    def test_count(self):
+        return len(self.tests)
+
+    @property
+    def passed(self):
+        return self.counter[TestStatus.PASS]
+
+    @property
+    def errors(self):
+        return self.counter[TestStatus.ERROR]
+
+    @property
+    def failed(self):
+        return self.counter[TestStatus.FAIL]
+
+    @property
+    def skipped(self):
+        return self.counter[TestStatus.SKIP]
+
+    @property
+    def muted(self):
+        return self.counter[TestStatus.MUTE]
+
+
+class TestSummary:
+    def __init__(self):
+        self.lines: List[TestSummaryLine] = []
+        self.is_failed = False
+
+    def add_line(self, line: TestSummaryLine):
+        self.is_failed |= line.is_failed
+        self.lines.append(line)
+
+    def render(self, add_footnote=False):
+        github_srv = os.environ.get('GITHUB_SERVER_URL', 'https://github.com')
+        repo = os.environ.get('GITHUB_REPOSITORY', 'ydb-platform/ydb')
+
+        footnote_url = f"{github_srv}/{repo}/tree/main/.github/config"
+
+        footnote = "[^1]" if add_footnote else f'<sup>[?]({footnote_url} "All mute rules are defined here")</sup>'
+
+        result = [
+            f"|      | TESTS | PASSED | ERRORS | FAILED | SKIPPED | MUTED{footnote} |",
+            "| :--- | ---:  | -----: | -----: | -----: | ------: | ----: |",
+        ]
+        for line in self.lines:
+            report_url = line.report_url
+            result.append(
+                " | ".join(
+                    [
+                        line.title,
+                        render_pm(line.test_count, f'{report_url}', 0),
+                        render_pm(line.passed, f'{report_url}#PASS', 0),
+                        render_pm(line.errors, f'{report_url}#ERROR', 0),
+                        render_pm(line.failed, f'{report_url}#FAIL', 0),
+                        render_pm(line.skipped, f'{report_url}#SKIP', 0),
+                        render_pm(line.muted, f'{report_url}#MUTE', 0),
+                    ]
+                )
+            )
+
+        if add_footnote:
+            result.append("")
+            result.append(f"[^1]: All mute rules are defined [here]({footnote_url}).")
+        return result
+
 
 def render_pm(value, url, diff=None):
     if value:
@@ -83,14 +184,14 @@ def render_testlist_html(rows, fn):
         fp.write(content)
 
 
-def write_summary(lines: List[str]):
+def write_summary(summary: TestSummary):
     summary_fn = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_fn:
         fp = open(summary_fn, "at")
     else:
         fp = sys.stdout
 
-    for line in lines:
+    for line in summary.render(add_footnote=True):
         fp.write(f"{line}\n")
     fp.write("\n")
 
@@ -99,70 +200,38 @@ def write_summary(lines: List[str]):
 
 
 def gen_summary(summary_url_prefix, summary_out_folder, paths, ):
-    summary = [
-        "|      | TESTS | PASSED | ERRORS | FAILED | SKIPPED | MUTED[^1] |",
-        "| :--- | ---:  | -----: | -----: | -----: | ------: | ----: |",
-    ]
-    for title, html_fn, path in paths:
-        tests = failed = errors = muted = skipped = passed = 0
+    summary = TestSummary()
 
-        test_results = []
+    for title, html_fn, path in paths:
+        summary_line = TestSummaryLine(title)
 
         for fn, suite, case in iter_xml_files(path):
-            tests += 1
-            classname, name = case.get("classname"), case.get("name")
-            if case.find("failure") is not None:
-                failed += 1
-                status = TestStatus.FAIL
-            elif case.find("error") is not None:
-                errors += 1
-                status = TestStatus.ERROR
-            elif get_property_value(case, "mute") is not None:
-                muted += 1
-                status = TestStatus.MUTE
-            elif case.find("skipped") is not None:
-                skipped += 1
-                status = TestStatus.SKIP
-            else:
-                passed += 1
-                status = TestStatus.PASS
-
-            test_result = TestResult(classname=classname, name=name, status=status)
-            test_results.append(test_result)
+            test_result = TestResult.from_junit(case)
+            summary_line.add(test_result)
 
         report_url = f'{summary_url_prefix}{html_fn}'
 
-        render_testlist_html(test_results, os.path.join(summary_out_folder, html_fn))
+        render_testlist_html(summary_line.tests, os.path.join(summary_out_folder, html_fn))
+        summary_line.add_report(html_fn, report_url)
+        summary.add_line(summary_line)
 
-        summary.append(
-            " | ".join(
-                [
-                    title,
-                    render_pm(tests, f'{report_url}', 0),
-                    render_pm(passed, f'{report_url}#PASS', 0),
-                    render_pm(errors, f'{report_url}#ERROR', 0),
-                    render_pm(failed, f'{report_url}#FAIL', 0),
-                    render_pm(skipped, f'{report_url}#SKIP', 0),
-                    render_pm(muted, f'{report_url}#MUTE', 0),
-                ]
-            )
-        )
-
-    github_srv = os.environ.get('GITHUB_SERVER_URL', 'https://github.com')
-    repo = os.environ.get('GITHUB_REPOSITORY', 'ydb-platform/ydb')
-
-    summary.append("\n")
-    summary.append(f"[^1]: All mute rules are defined [here]({github_srv}/{repo}/tree/main/.github/config).")
     return summary
 
 
-def update_pr_comment(pr: PullRequest, summary: List[str]):
+def update_pr_comment(pr: PullRequest, summary: TestSummary):
     header = f"<!-- status {pr.number} -->"
+
+    if summary.is_failed:
+        result = ':red_circle: Some tests failed'
+    else:
+        result = ':green_circle: All tests passed'
+
     body = [
         header,
-        f"Hi! Test results for commit {pr.head.sha}:"
+        f"{result} for commit {pr.head.sha}."
     ]
-    body.extend(summary)
+
+    body.extend(summary.render())
     body = '\n'.join(body)
 
     comment = None
@@ -174,9 +243,6 @@ def update_pr_comment(pr: PullRequest, summary: List[str]):
 
     if comment is None:
         pr.create_issue_comment(body)
-        return
-
-    if comment.body == body:
         return
 
     comment.edit(body)
@@ -197,16 +263,16 @@ def main():
     title_path = list(zip(paths, paths, paths))
 
     summary = gen_summary(args.summary_url_prefix, args.summary_out_path, title_path)
-    write_summary(lines=summary)
+    write_summary(summary)
 
     if os.environ.get('GITHUB_EVENT_NAME') in ('pull_request', 'pull_request_target'):
         gh = Github(auth=GithubAuth.Token(os.environ['GITHUB_TOKEN']))
 
         with open(os.environ['GITHUB_EVENT_PATH']) as fp:
             event = json.load(fp)
+
         pr = gh.create_from_raw_data(PullRequest, event['pull_request'])
         update_pr_comment(pr, summary)
-
 
 
 if __name__ == "__main__":
