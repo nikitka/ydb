@@ -18,6 +18,14 @@ on:
           - thread
           - undefined
           - leak
+      test_size:
+        type: choice
+        default: "all"
+        description: "test size to run"
+        options:
+          - small
+          - small-medium
+          - all
       runner_label:
         type: string
         default: "ya-make"
@@ -42,6 +50,9 @@ on:
       sanitizer:
         type: string
         default: "none"
+      test_size:
+        type: string
+        default: "all"
       run_build:
         type: boolean
         default: true
@@ -65,5 +76,6 @@ jobs:
       sanitizer: ${{ inputs.sanitizer }}
       run_build: ${{ inputs.run_build }}
       run_tests: ${{ inputs.run_tests }}
+      test_size: ${{ inputs.test_size }}
       log_suffix: ${{ inputs.testmo_source }}
     secrets: inherit
