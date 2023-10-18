@@ -17,6 +17,10 @@ inputs:
   bazel_remote_password:
     required: false
     description: "bazel-remote password"
+  link_threads:
+    required: false
+    default: "8"
+    description: "link threads count"
 
 runs:
   using: "composite"
@@ -51,12 +55,13 @@ runs:
         if [ ! -z "${{ inputs.bazel_remote_username }}" ]; then
           extra_params+=(--bazel-remote-username "${{ inputs.bazel_remote_username }}")
           extra_params+=(--bazel-remote-password "${{ inputs.bazel_remote_password }}")
-          extra_params+=(--bazel-remote-put --add-result .o --yt-replace-result --yt-replace-result-rm-binaries)
+          extra_params+=(--bazel-remote-put --dist-cache-evict-bins --add-result .o)
         fi
 
         ./ya make --build relwithdebinfo --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --dump-graph --dump-graph-to-file "$TMP_DIR/ya_graph.json" \
+          --link-threads "${{ inputs.link_threads }}" \
           "${extra_params[@]}"
 
     - name: sync logs to s3
