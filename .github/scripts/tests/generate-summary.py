@@ -277,11 +277,11 @@ def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, tes
         sanitizer_text = 'without sanitizers.'
 
     if summary.is_failed:
-        result = ":red_circle: Some tests failed"
+        result = f":red_circle: Some tests {sanitizer_text} failed"
     else:
-        result = ":green_circle: All tests passed"
+        result = f":green_circle: All tests {sanitizer_text} passed"
 
-    body = [header, f"{result} for commit {pr.head.sha} {sanitizer_text}."]
+    body = [header, f"{result} for commit {pr.head.sha}."]
 
     if test_history_url:
         body.append("")
