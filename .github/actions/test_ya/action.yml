@@ -209,4 +209,8 @@ runs:
       shell: bash
       run: |
         .github/scripts/tests/fail-checker.py "$JUNIT_REPORT_XML"
-        
+
+    - name: show free space
+      if: always()
+      shell: bash
+      run: df -h
