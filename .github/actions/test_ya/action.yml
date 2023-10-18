@@ -197,6 +197,7 @@ runs:
           --summary-out-path $ARTIFACTS_DIR/summary/ \
           --summary-url-prefix $S3_URL_PREFIX/summary/ \
           --test-history-url $TEST_HISTORY_URL \
+          --sanitizer ${{ inputs.sanitizer }} \
           "Tests" ya-test.html "$JUNIT_REPORT_XML"
 
 

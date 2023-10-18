@@ -268,15 +268,20 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
-def update_pr_comment(pr: PullRequest, summary: TestSummary, s3_prefix: str, test_history_url: str):
-    header = f"<!-- status {pr.number}-{s3_prefix} -->"
+def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    header = f"<!-- status {pr.number}-{sanitizer} -->"
+
+    if sanitizer and sanitizer != 'none':
+        sanitizer_text = f'with {sanitizer} sanitizer'
+    else:
+        sanitizer_text = 'without sanitizers.'
 
     if summary.is_failed:
         result = ":red_circle: Some tests failed"
     else:
         result = ":green_circle: All tests passed"
 
-    body = [header, f"{result} for commit {pr.head.sha}."]
+    body = [header, f"{result} for commit {pr.head.sha} {sanitizer_text}."]
 
     if test_history_url:
         body.append("")
@@ -304,6 +309,7 @@ def main():
     parser.add_argument("--summary-out-path", required=True)
     parser.add_argument("--summary-url-prefix", required=True)
     parser.add_argument('--test-history-url', required=False)
+    parser.add_argument('--sanitizer', required=False)
     parser.add_argument("args", nargs="+", metavar="TITLE html_out path")
     args = parser.parse_args()
 
@@ -324,7 +330,7 @@ def main():
             event = json.load(fp)
 
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(pr, summary, args.summary_url_prefix, args.test_history_url)
+        update_pr_comment(pr, summary, args.sanitizer, args.test_history_url)
 
 
 if __name__ == "__main__":
