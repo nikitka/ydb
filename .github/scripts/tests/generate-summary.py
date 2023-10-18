@@ -271,12 +271,17 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
 def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
     header = f"<!-- status {pr.number}-{sanitizer} -->"
 
-    if summary.is_failed:
-        result = f":red_circle: Some tests failed"
+    if sanitizer and sanitizer != 'none':
+        sanitizer_text = f'with **{sanitizer}** sanitizer'
     else:
-        result = f":green_circle: All tests passed"
+        sanitizer_text = 'without sanitizers.'
 
-    body = [header, f"sanitizer={sanitizer}. {result} for commit {pr.head.sha}."]
+    if summary.is_failed:
+        result = f":red_circle: Some tests {sanitizer_text} failed"
+    else:
+        result = f":green_circle: All tests {sanitizer_text} passed"
+
+    body = [header, f"{result} for commit {pr.head.sha}."]
 
     if test_history_url:
         body.append("")
