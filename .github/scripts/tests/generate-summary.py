@@ -268,8 +268,8 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
-def update_pr_comment(pr: PullRequest, summary: TestSummary, test_history_url: str):
-    header = f"<!-- status {pr.number} -->"
+def update_pr_comment(pr: PullRequest, summary: TestSummary, s3_prefix: str, test_history_url: str):
+    header = f"<!-- status {pr.number}-{s3_prefix} -->"
 
     if summary.is_failed:
         result = ":red_circle: Some tests failed"
@@ -324,7 +324,7 @@ def main():
             event = json.load(fp)
 
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(pr, summary, args.test_history_url)
+        update_pr_comment(pr, summary, args.summary_url_prefix, args.test_history_url)
 
 
 if __name__ == "__main__":

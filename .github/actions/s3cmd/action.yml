@@ -32,8 +32,8 @@ runs:
         host_base = storage.yandexcloud.net
         host_bucket = %(bucket)s.storage.yandexcloud.net
         EOF
-        echo "S3_BUCKET_PATH=s3://${{ inputs.s3_bucket }}/${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}/${{inputs.log_suffix}}" >> $GITHUB_ENV
-        echo "S3_URL_PREFIX=${{inputs.s3_endpoint}}/${{inputs.s3_bucket}}/${{ github.repository }}/${{github.workflow}}/${{github.run_id}}/${{inputs.log_suffix}}" >> $GITHUB_ENV
+        echo "S3_BUCKET_PATH=s3://${{ inputs.s3_bucket }}/${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}/${{ inputs.log_suffix }}" >> $GITHUB_ENV
+        echo "S3_URL_PREFIX=${{ inputs.s3_endpoint }}/${{ inputs.s3_bucket }}/${{ github.repository }}/${{ github.workflow }}/${{ github.run_id }}/${{ inputs.log_suffix }}" >> $GITHUB_ENV
       env:
         s3_key_id: ${{ inputs.s3_key_id }}
         s3_secret_access_key: ${{ inputs.s3_key_secret }}
