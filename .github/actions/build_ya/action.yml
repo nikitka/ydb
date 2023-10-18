@@ -61,7 +61,7 @@ runs:
         ./ya make --build relwithdebinfo --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --dump-graph --dump-graph-to-file "$TMP_DIR/ya_graph.json" \
-          --link-threads "${{ inputs.link_threads }}" \
+          --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
           "${extra_params[@]}"
 
     - name: sync logs to s3
