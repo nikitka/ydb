@@ -268,8 +268,56 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
+def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    if sanitizer and sanitizer != 'none':
+        sanitizer_text = f'with **{sanitizer}** sanitizer'
+    else:
+        sanitizer_text = 'without sanitizers.'
+
+    if summary.is_failed:
+        result = f":red_circle: Some tests {sanitizer_text} failed"
+    else:
+        result = f":green_circle: All tests {sanitizer_text} passed"
+
+    body = [f"{result} for commit {pr.head.sha}."]
+
+    if test_history_url:
+        body.append("")
+        body.append(f"[Test history]({test_history_url})")
+
+    body.extend(summary.render())
+
+    return body
+
+
 def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
-    header = f"<!-- status {pr.number}-{sanitizer} -->"
+    header = f"<!-- status {pr.number} -->"
+
+    for c in pr.get_issue_comments():
+        if c.body.startswith(header):
+            comment = c
+            body = [c.body, ""]
+            break
+    else:
+        comment = None
+        body = [
+            "> [!NOTE]",
+            "> This is an automated comment that will be appended during check runs. "
+            "And at the end, it will be replaced with the final summary."
+        ]
+
+    body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
+
+    body = "\n".join(body)
+
+    if comment is None:
+        pr.create_issue_comment(body)
+    else:
+        comment.edit(body)
+
+
+def update_pr_comment_old(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    header = f"<!-- status {pr.number} -->"
 
     if sanitizer and sanitizer != 'none':
         sanitizer_text = f'with **{sanitizer}** sanitizer'
