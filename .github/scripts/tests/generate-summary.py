@@ -301,9 +301,11 @@ def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, tes
     else:
         comment = None
         body = [
+            header,
             "> [!NOTE]",
             "> This is an automated comment that will be appended during check runs. "
-            "And at the end, it will be replaced with the final summary."
+            "And at the end, it will be replaced with the final summary.",
+            ""
         ]
 
     body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
