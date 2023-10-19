@@ -308,8 +308,8 @@ def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, tes
             ""
         ]
 
-    body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
     body.extend(["", "---", ""])
+    body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
 
     body = "\n".join(body)
 
