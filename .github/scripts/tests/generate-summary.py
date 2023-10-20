@@ -306,7 +306,7 @@ def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sa
     if body is None:
         body = [
             header.format(run_number),
-            "> [^NOTE]",
+            "> [!NOTE]",
             "> This is an automated comment that will be appended during check runs.",
             "",
         ]
