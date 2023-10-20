@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [none, address]
+        sanitizer: [none, address, thread, memory, undefined, leak]
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
       sanitizer: ${{ matrix.sanitizer }}
