@@ -300,7 +300,7 @@ def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sa
     for c in pr.get_issue_comments():
         if matches := header_re.match(c.body):
             comment = c
-            if int(matches[0]) == run_number:
+            if int(matches[1]) == run_number:
                 body = [c.body, "", "---", ""]
 
     if body is None:
