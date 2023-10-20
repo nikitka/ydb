@@ -2,6 +2,7 @@
 import argparse
 import dataclasses
 import os
+import re
 import json
 import sys
 from github import Github, Auth as GithubAuth
@@ -290,20 +291,24 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test
     return body
 
 
-def update_pr_comment(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
-    header = f"<!-- status {pr.number} -->"
+def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    header = f"<!-- status pr={pr.number}, run={{}} -->"
+    header_re = re.compile(header.format(r"(\d+)"))
+
+    comment = body = None
 
     for c in pr.get_issue_comments():
-        if c.body.startswith(header):
+        if matches := header_re.match(c.body):
             comment = c
-            body = [c.body, ""]
-            break
-    else:
-        comment = None
+            if int(matches[1]) == run_number:
+                body = [c.body, "", "---", ""]
+
+    if body is None:
         body = [
+            header.format(run_number),
             "> [!NOTE]",
-            "> This is an automated comment that will be appended during check runs. "
-            "And at the end, it will be replaced with the final summary."
+            "> This is an automated comment that will be appended during check runs.",
+            "",
         ]
 
     body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
@@ -377,8 +382,9 @@ def main():
         with open(os.environ["GITHUB_EVENT_PATH"]) as fp:
             event = json.load(fp)
 
+        run_number = int(os.environ.get("GITHUB_RUN_NUMBER"))
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(pr, summary, args.sanitizer, args.test_history_url)
+        update_pr_comment(run_number, pr, summary, args.sanitizer, args.test_history_url)
 
 
 if __name__ == "__main__":

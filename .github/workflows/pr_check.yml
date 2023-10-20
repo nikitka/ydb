@@ -97,7 +97,7 @@ jobs:
   build_and_test:
 #    needs:
 #      - check-running-allowed
-    if: needs.check-running-allowed.outputs.result == 'true'
+#    if: needs.check-running-allowed.outputs.result == 'true'
     strategy:
       fail-fast: false
       matrix:
