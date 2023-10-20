@@ -292,8 +292,8 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test
 
 
 def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
-    header = f"^<!-- status pr={pr.number}, run={{}} -->"
-    header_re = re.compile(header.format(r"(\d+)"))
+    header = f"<!-- status pr={pr.number}, run={{}} -->"
+    header_re = re.compile("^" + header.format(r"(\d+)"))
 
     comment = body = None
 
