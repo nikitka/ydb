@@ -293,19 +293,22 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test
 
 def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
     header = f"<!-- status pr={pr.number}, run={{}} -->"
-    header_re = re.compile("^" + header.format(r"(\d+)"))
+    header_re = re.compile(header.format(r"(\d+)"))
 
     comment = body = None
 
     for c in pr.get_issue_comments():
-        if found := header_re.findall(c.body):
+        if matches := header_re.match(c.body):
             comment = c
-            if found[0] == run_number:
+            if matches[0] == run_number:
                 body = [c.body, "", "---", ""]
 
     if body is None:
         body = [
-            header.format(run_number)
+            header.format(run_number),
+            "| [^NOTE]",
+            "| This is an automated comment that will be appended during check runs.",
+            "",
         ]
 
     body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
