@@ -102,7 +102,7 @@ jobs:
       fail-fast: false
       matrix:
         sanitizer: [none, address, thread, memory, undefined, leak]
-    name: Test ${{ matrix.sanitizer != 'none' && format('({0} sanitizer)', matrix.sanitizer) || '' }}
+    name: Build and test ${{ matrix.sanitizer != 'none' && format('({0} sanitizer)', matrix.sanitizer) || '' }}
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
       sanitizer: ${{ matrix.sanitizer }}
