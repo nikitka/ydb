@@ -98,8 +98,13 @@ jobs:
     needs:
       - check-running-allowed
     if: needs.check-running-allowed.outputs.result == 'true'
-    uses: ./.github/workflows/build_and_test_ondemand.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [none]
+    name: Build and test ${{ matrix.sanitizer != 'none' && format('({0} sanitizer)', matrix.sanitizer) || '' }}
+    uses: ./.github/workflows/build_and_test_ya_ondemand.yml
     with:
-      run_functional_tests: false
-      test_label_regexp: '(SMALL|MEDIUM)'
+      sanitizer: ${{ matrix.sanitizer }}
+      test_size: "small-medium"
     secrets: inherit

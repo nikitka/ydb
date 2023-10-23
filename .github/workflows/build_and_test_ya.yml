@@ -41,8 +41,14 @@ jobs:
     name: Build and test
     runs-on: [ self-hosted, "${{ inputs.runner_kind }}", "${{ inputs.runner_label }}" ]
     steps:
+    - name: Checkout PR
+      uses: actions/checkout@v3
+      if: github.event.pull_request.head.sha != ''
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout
       uses: actions/checkout@v3
+      if: github.event.pull_request.head.sha == ''
 
     - name: Prepare s3cmd
       uses: ./.github/actions/s3cmd

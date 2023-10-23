@@ -2,6 +2,7 @@
 import argparse
 import dataclasses
 import os
+import re
 import json
 import sys
 from github import Github, Auth as GithubAuth
@@ -268,35 +269,56 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
-def update_pr_comment(pr: PullRequest, summary: TestSummary, test_history_url: str):
-    header = f"<!-- status {pr.number} -->"
+def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    if sanitizer and sanitizer != 'none':
+        sanitizer_text = f'with **{sanitizer}** sanitizer'
+    else:
+        sanitizer_text = 'without sanitizers.'
 
     if summary.is_failed:
-        result = ":red_circle: Some tests failed"
+        result = f":red_circle: Some tests {sanitizer_text} failed"
     else:
-        result = ":green_circle: All tests passed"
+        result = f":green_circle: All tests {sanitizer_text} passed"
 
-    body = [header, f"{result} for commit {pr.head.sha}."]
+    body = [f"{result} for commit {pr.head.sha}."]
 
     if test_history_url:
         body.append("")
         body.append(f"[Test history]({test_history_url})")
 
     body.extend(summary.render())
-    body = "\n".join(body)
 
-    comment = None
+    return body
+
+
+def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+    header = f"<!-- status pr={pr.number}, run={{}} -->"
+    header_re = re.compile(header.format(r"(\d+)"))
+
+    comment = body = None
 
     for c in pr.get_issue_comments():
-        if c.body.startswith(header):
+        if matches := header_re.match(c.body):
             comment = c
-            break
+            if int(matches[1]) == run_number:
+                body = [c.body, "", "---", ""]
+
+    if body is None:
+        body = [
+            header.format(run_number),
+            "> [!NOTE]",
+            "> This is an automated comment that will be appended during run.",
+            "",
+        ]
+
+    body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
+
+    body = "\n".join(body)
 
     if comment is None:
         pr.create_issue_comment(body)
-        return
-
-    comment.edit(body)
+    else:
+        comment.edit(body)
 
 
 def main():
@@ -304,6 +326,7 @@ def main():
     parser.add_argument("--summary-out-path", required=True)
     parser.add_argument("--summary-url-prefix", required=True)
     parser.add_argument('--test-history-url', required=False)
+    parser.add_argument('--sanitizer', required=False)
     parser.add_argument("args", nargs="+", metavar="TITLE html_out path")
     args = parser.parse_args()
 
@@ -323,8 +346,9 @@ def main():
         with open(os.environ["GITHUB_EVENT_PATH"]) as fp:
             event = json.load(fp)
 
+        run_number = int(os.environ.get("GITHUB_RUN_NUMBER"))
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(pr, summary, args.test_history_url)
+        update_pr_comment(run_number, pr, summary, args.sanitizer, args.test_history_url)
 
 
 if __name__ == "__main__":
