@@ -9,7 +9,7 @@ from github import Github, Auth as GithubAuth
 from github.PullRequest import PullRequest
 from enum import Enum
 from operator import attrgetter
-from typing import List, Optional
+from typing import List, Optional, Dict
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from junit_utils import get_property_value, iter_xml_files
 
@@ -30,7 +30,7 @@ class TestResult:
     classname: str
     name: str
     status: TestStatus
-    log_url: Optional[str]
+    log_urls: Dict[str, str]
     elapsed: float
 
     @property
@@ -74,7 +74,13 @@ class TestResult:
         else:
             status = TestStatus.PASS
 
-        log_url = get_property_value(testcase, "url:Log")
+        log_urls = {
+            'Log': get_property_value(testcase, "url:Log"),
+            'stdout': get_property_value(testcase, "url:stdout"),
+            'stderr': get_property_value(testcase, "url:stderr"),
+        }
+        log_urls = {k: v for k, v in log_urls.items() if v}
+
         elapsed = testcase.get("time")
 
         try:
@@ -83,7 +89,7 @@ class TestResult:
             elapsed = 0
             print(f"Unable to cast elapsed time for {classname}::{name}  value={elapsed!r}")
 
-        return cls(classname, name, status, log_url, elapsed)
+        return cls(classname, name, status, log_urls, elapsed)
 
 
 class TestSummaryLine:
@@ -216,7 +222,7 @@ def render_testlist_html(rows, fn):
 
     for t in rows:
         status_test.setdefault(t.status, []).append(t)
-        if t.log_url:
+        if any(t.log_urls.values()):
             has_any_log.add(t.status)
 
     for status in status_test.keys():
