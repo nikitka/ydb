@@ -108,6 +108,6 @@ jobs:
     with:
       sanitizer: ${{ matrix.sanitizer }}
 #      build_target: "ydb/library/aclib/ut/"
-#      test_size: "small-medium"
-      test_size: "small"
+      test_size: "small-medium"
+#      test_size: "small"
     secrets: inherit
