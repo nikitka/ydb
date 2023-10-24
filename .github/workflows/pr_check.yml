@@ -107,6 +107,7 @@ jobs:
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
       sanitizer: ${{ matrix.sanitizer }}
-      build_target: "ydb/library/aclib/ut/"
-      test_size: "small-medium"
+#      build_target: "ydb/library/aclib/ut/"
+#      test_size: "small-medium"
+      test_size: "small"
     secrets: inherit
