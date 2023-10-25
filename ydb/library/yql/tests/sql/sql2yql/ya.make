@@ -5,6 +5,10 @@ PY3TEST()
         test_sql_format.py
     )
 
+IF (OPENSOURCE)
+    SKIP_TEST("wait for KIKIMR-19209")
+ENDIF()
+
 IF (SANITIZER_TYPE)
     TIMEOUT(1800)
     SIZE(LARGE)
