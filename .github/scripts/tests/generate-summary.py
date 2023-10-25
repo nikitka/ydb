@@ -279,7 +279,7 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test
     if sanitizer and sanitizer != 'none':
         sanitizer_text = f'with **{sanitizer}** sanitizer'
     else:
-        sanitizer_text = 'without sanitizers.'
+        sanitizer_text = 'without sanitizers'
 
     if summary.is_failed:
         result = f":red_circle: Some tests {sanitizer_text} failed"
