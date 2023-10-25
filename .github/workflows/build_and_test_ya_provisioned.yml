@@ -42,6 +42,14 @@ on:
         type: string
         default: "ya-x86-64"
         description: "testmo source"
+      test_threads:
+        type: number
+        default: 28
+        description: "Test threads count"
+      link_threads:
+        type: number
+        default: 8
+        description: "link threads count"
   workflow_call:
     inputs:
       build_target:
@@ -86,4 +94,6 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
       test_size: ${{ inputs.test_size }}
       log_suffix: ${{ inputs.testmo_source }}${{ inputs.sanitizer != 'none' && format('-{0}', inputs.sanitizer) || '' }}
+      link_threads: ${{ inputs.link_threads }}
+      test_threads: ${{ inputs.test_threads }}
     secrets: inherit

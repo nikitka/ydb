@@ -27,14 +27,14 @@ on:
         type: boolean
         default: true
         description: "run tests"
-        test_threads:
-          type: number
-          default: 28
-          description: "Test threads count"
-        link_threads:
-          type: number
-          default: 8
-          description: "link threads count"
+      test_threads:
+        type: number
+        default: 28
+        description: "Test threads count"
+      link_threads:
+        type: number
+        default: 8
+        description: "link threads count"
       test_size:
         type: string
         default: "all"
