@@ -157,9 +157,6 @@ runs:
           extra_params+=(--bazel-remote-base-uri "${{ inputs.bazel_remote_uri }}")
         fi
         
-        # FIXME: remove this after KIKIMR-19209
-        sed 's/[^#]sql2yql/#sql2yql/' ydb/library/yql/tests/sql/ya.make
-        
         ./ya test --build relwithdebinfo -D'BUILD_LANGUAGES=CPP PY3' \
           --test-threads "${{ inputs.test_threads }}" --link-threads "${{ inputs.link_threads }}" \
           --cache-size 512G --regular-tests --do-not-output-stderrs -T \

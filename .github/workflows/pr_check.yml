@@ -109,5 +109,6 @@ jobs:
       sanitizer: ${{ matrix.sanitizer }}
 #      build_target: "ydb/library/aclib/ut/"
       test_size: "small-medium"
+      test_threads: "42"
 #      test_size: "small"
     secrets: inherit

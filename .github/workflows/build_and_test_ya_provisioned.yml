@@ -59,6 +59,14 @@ on:
       run_tests:
         type: boolean
         default: true
+      test_threads:
+        type: number
+        default: 28
+        description: "Test threads count"
+      link_threads:
+        type: number
+        default: 8
+        description: "link threads count"
       runner_label:
         type: string
         default: "ya-make"

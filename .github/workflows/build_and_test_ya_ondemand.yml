@@ -30,6 +30,14 @@ on:
           - small
           - small-medium
           - all
+      test_threads:
+        type: number
+        default: 28
+        description: "Test threads count"
+      link_threads:
+        type: number
+        default: 8
+        description: "link threads count"
       run_build:
         type: boolean
         default: true
