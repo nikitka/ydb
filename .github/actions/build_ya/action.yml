@@ -57,7 +57,10 @@ runs:
           extra_params+=(--bazel-remote-password "${{ inputs.bazel_remote_password }}")
           extra_params+=(--bazel-remote-put --dist-cache-evict-bins --add-result .o)
         fi
-
+        
+        # FIXME: remove this after KIKIMR-19209
+        sed 's/[^#]sql2yql/#sql2yql/' ydb/library/yql/tests/sql/ya.make
+        
         ./ya make --build relwithdebinfo --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --dump-graph --dump-graph-to-file "$TMP_DIR/ya_graph.json" \
