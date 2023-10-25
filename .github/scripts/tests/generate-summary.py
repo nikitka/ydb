@@ -76,6 +76,7 @@ class TestResult:
 
         log_urls = {
             'Log': get_property_value(testcase, "url:Log"),
+            'log': get_property_value(testcase, "url:log"),
             'stdout': get_property_value(testcase, "url:stdout"),
             'stderr': get_property_value(testcase, "url:stderr"),
         }
