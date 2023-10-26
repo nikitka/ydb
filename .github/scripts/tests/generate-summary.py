@@ -276,16 +276,12 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
-def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
-    if sanitizer and sanitizer != 'none':
-        sanitizer_text = f'with **{sanitizer}** sanitizer'
-    else:
-        sanitizer_text = 'without sanitizers'
+def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
 
     if summary.is_failed:
-        result = f":red_circle: Some tests {sanitizer_text} failed"
+        result = f":red_circle: Some tests for {build_preset} failed"
     else:
-        result = f":green_circle: All tests {sanitizer_text} passed"
+        result = f":green_circle: All tests for {build_preset} passed"
 
     body = [f"{result} for commit {pr.head.sha}."]
 
@@ -298,7 +294,7 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, sanitizer: str, test
     return body
 
 
-def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sanitizer: str, test_history_url: str):
+def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
     header = f"<!-- status pr={pr.number}, run={{}} -->"
     header_re = re.compile(header.format(r"(\d+)"))
 
@@ -318,7 +314,7 @@ def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, sa
             "",
         ]
 
-    body.extend(get_comment_text(pr, summary, sanitizer, test_history_url))
+    body.extend(get_comment_text(pr, summary, build_preset, test_history_url))
 
     body = "\n".join(body)
 
@@ -333,7 +329,7 @@ def main():
     parser.add_argument("--summary-out-path", required=True)
     parser.add_argument("--summary-url-prefix", required=True)
     parser.add_argument('--test-history-url', required=False)
-    parser.add_argument('--sanitizer', required=False)
+    parser.add_argument('--build-preset', default="default-linux-x86-64-relwithdebinfo", required=False)
     parser.add_argument("args", nargs="+", metavar="TITLE html_out path")
     args = parser.parse_args()
 
@@ -355,7 +351,7 @@ def main():
 
         run_number = int(os.environ.get("GITHUB_RUN_NUMBER"))
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(run_number, pr, summary, args.sanitizer, args.test_history_url)
+        update_pr_comment(run_number, pr, summary, args.build_preset, args.test_history_url)
 
 
 if __name__ == "__main__":
