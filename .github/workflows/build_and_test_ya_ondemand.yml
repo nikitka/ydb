@@ -131,6 +131,8 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
       test_size: ${{ inputs.test_size }}
       log_suffix: ya-x86-64${{ inputs.sanitizer != 'none' && format('-{0}', inputs.sanitizer) || '' }}
+      link_threads: ${{ inputs.link_threads }}
+      test_threads: ${{ inputs.test_threads }}
     secrets: inherit
 
   release-runner:
