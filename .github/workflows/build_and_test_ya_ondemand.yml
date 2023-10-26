@@ -11,33 +11,14 @@ on:
         type: string
         default: "ydb/"
         description: "limit build and test to specific target"
-      build_type:
+      build_preset:
         type: choice
-        default: "relwithdebinfo"
-        description: "Build type"
+        default: "default-linux-x86_64-relwithdebinfo"
+        description: "Build preset"
         options:
-          - debug
-          - release
-          - profile
-          - gprof
-          - valgrind
-          - valgrind-release
-          - coverage
-          - relwithdebinfo
-          - minsizerel
-          - debugnoasserts
-          - fastdebug
-      sanitizer:
-        type: choice
-        default: "none"
-        description: "sanitizer type"
-        options:
-          - none
-          - address
-          - memory
-          - thread
-          - undefined
-          - leak
+          - default-linux-x86_64-relwithdebinfo
+          - default-linux-x86_64-release-asan
+          - default-linux-x86_64-release-tsan
       test_size:
         type: choice
         default: "all"
@@ -70,12 +51,8 @@ on:
       build_target:
         type: string
         default: "ydb/"
-      build_type:
+      build_preset:
         type: string
-        default: "relwithdebinfo"
-      sanitizer:
-        type: string
-        default: "none"
       test_size:
         type: string
         default: "all"
@@ -145,12 +122,10 @@ jobs:
       runner_kind: self-hosted
       runner_label: ${{ needs.provide-runner.outputs.label }}
       build_target: ${{ inputs.build_target }}
-      build_type: ${{ inputs.build_type }}
-      sanitizer: ${{ inputs.sanitizer }}
+      build_preset: ${{ inputs.build_preset }}
       run_build: ${{ inputs.run_build }}
       run_tests: ${{ inputs.run_tests }}
       test_size: ${{ inputs.test_size }}
-      log_suffix: ya-x86-64${{ inputs.sanitizer != 'none' && format('-{0}', inputs.sanitizer) || '' }}
       link_threads: ${{ inputs.link_threads }}
       test_threads: ${{ inputs.test_threads }}
     secrets: inherit

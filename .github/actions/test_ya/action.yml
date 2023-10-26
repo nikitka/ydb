@@ -5,24 +5,16 @@ inputs:
     required: false
     description: "build target"
 
-  build_type:
-    required: false
-    default: "relwithdebinfo"
-    description: "build type (debug, release, profile, gprof, valgrind, valgrind-release, coverage, relwithdebinfo, minsizerel, debugnoasserts, fastdebug)"
-    
-  sanitizer:
-    required: false
-    description: "sanitizer type (address, memory, thread, undefined, leak)"
+  build_preset:
+    required: true
+    default: "default-linux-x86_64-relwithdebinfo"
+    description: "default-linux-x86_64-relwithdebinfo, default-linux-x86_64-release-asan, default-linux-x86_64-release-tsan"
   
   test_size:
     required: false
     default: "all"
     description: "small or small-medium or all"
 
-    
-  log_suffix:
-    required: true
-    description: "log suffix"
   test_threads:
     required: false
     default: "28"
@@ -85,8 +77,22 @@ runs:
       run: |
         RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
         BRANCH_TAG="$GITHUB_REF_NAME"
-        TESTMO_SOURCE="${{ inputs.log_suffix }}"
-        TESTMO_SOURCE="${TESTMO_SOURCE/_/-}"
+        
+        case "${{ inputs.build_preset }}" in
+          default-linux-x86_64-relwithdebinfo)
+            TESTMO_SOURCE=ya-x86-64
+            ;;
+          default-linux-x86_64-release-asan)
+            TESTMO_SOURCE=ya-x86-64-asan
+            ;;
+          default-linux-x86_64-release-tsan)
+            TESTMO_SOURCE=ya-x86-64-tsan
+            ;;
+          *)
+            echo "Invalid preset: ${{ inputs.build_preset }}"
+            exit 1
+            ;;
+        esac
         
         case $GITHUB_EVENT_NAME in
         workflow_dispatch)
@@ -148,21 +154,40 @@ runs:
             exit -1
             ;;
         esac
+        
+        
+        # FIXME: copy-paste from build_ya
+        case "${{ inputs.build_preset }}" in
+          default-linux-x86_64-relwithdebinfo)
+            build_type=relwithdebinfo
+            ;;
+          default-linux-x86_64-release-asan)
+            build_type=release
+            extra_params+=(--sanitize="address")
+            extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
+            ;;
+          default-linux-x86_64-release-tsan)
+            build_type=release
+            extra_params+=(--sanitize="thread")
+            extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
+            ;;
+          *)
+            echo "Invalid preset: ${{ inputs.build_preset }}"
+            exit 1
+            ;;
+        esac
+
 
         if [ ! -z "${{ inputs.build_target }}" ]; then
           extra_params+=(--target="${{ inputs.build_target }}")
         fi
 
-        if [ ! -z "${{ inputs.sanitizer }}" ] && [ "${{ inputs.sanitizer }}" != "none" ]; then
-          extra_params+=(--sanitize="${{ inputs.sanitizer }}")
-        fi
-        
         if [ ! -z "${{ inputs.bazel_remote_uri }}" ]; then
           extra_params+=(--bazel-remote-store)
           extra_params+=(--bazel-remote-base-uri "${{ inputs.bazel_remote_uri }}")
         fi
         
-        ./ya test -k --build ${{ inputs.build_type }} -D'BUILD_LANGUAGES=CPP PY3' \
+        ./ya test -k --build "${build_type}" -D'BUILD_LANGUAGES=CPP PY3' \
           --test-threads "${{ inputs.test_threads }}" --link-threads "${{ inputs.link_threads }}" \
           --cache-size 512G --regular-tests --do-not-output-stderrs -T \
           --stat --log-file "$LOG_DIR/ya_log.txt" --evlog-file "$LOG_DIR/ya_evlog.jsonl" \

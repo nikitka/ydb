@@ -4,14 +4,10 @@ inputs:
   build_target:
     required: false
     description: "build target"
-  build_type:
-    required: false
-    default: "relwithdebinfo"
-    description: "build type (debug, release, profile, gprof, valgrind, valgrind-release, coverage, relwithdebinfo, minsizerel, debugnoasserts, fastdebug)"
-  sanitizer:
-    required: false
-    description: "sanitizer type (address, memory, thread, undefined, leak)"
-
+  build_preset:
+    required: true
+    default: "default-linux-x86_64-relwithdebinfo"
+    description: "default-linux-x86_64-relwithdebinfo, default-linux-x86_64-release-asan, default-linux-x86_64-release-tsan"
   bazel_remote_uri:
     required: false
     description: "bazel-remote endpoint"
@@ -47,10 +43,6 @@ runs:
           extra_params+=(--target="${{ inputs.build_target }}")
         fi
         
-        if [ ! -z "${{ inputs.sanitizer }}" ] && [ "${{ inputs.sanitizer }}" != "none" ]; then
-          extra_params+=(--sanitize="${{ inputs.sanitizer }}")
-        fi
-        
         if [ ! -z "${{ inputs.bazel_remote_uri }}" ]; then
           extra_params+=(--bazel-remote-store)
           extra_params+=(--bazel-remote-base-uri "${{ inputs.bazel_remote_uri }}")
@@ -62,7 +54,27 @@ runs:
           extra_params+=(--bazel-remote-put --dist-cache-evict-bins --add-result .o)
         fi
         
-        ./ya make --build ${{ inputs.build_type }} --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
+        case "${{ inputs.build_preset }}" in
+          default-linux-x86_64-relwithdebinfo)
+            build_type=relwithdebinfo
+            ;;
+          default-linux-x86_64-release-asan)
+            build_type=release
+            extra_params+=(--sanitize="address")
+            extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
+            ;;
+          default-linux-x86_64-release-tsan)
+            build_type=release
+            extra_params+=(--sanitize="thread")
+            extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
+            ;;
+          *)
+            echo "Invalid preset: ${{ inputs.build_preset }}"
+            exit 1
+            ;;
+        esac
+        
+        ./ya make --build "${build_type}" --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --dump-graph --dump-graph-to-file "$TMP_DIR/ya_graph.json" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
