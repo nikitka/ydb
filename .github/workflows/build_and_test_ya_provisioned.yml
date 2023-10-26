@@ -51,6 +51,7 @@ on:
         type: string
       test_size:
         type: string
+        default: "all"
       run_build:
         type: boolean
         default: true
@@ -59,12 +60,15 @@ on:
         default: true
       test_threads:
         type: string
+        default: "28"
         description: "Test threads count"
       link_threads:
         type: string
+        default: "8"
         description: "link threads count"
       runner_label:
         type: string
+        default: "ya-make"
 
 jobs:
   main:

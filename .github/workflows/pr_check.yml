@@ -101,12 +101,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        preset: ["default-linux-x86_64-relwithdebinfo", "default-linux-x86_64-release-asan"]
-    name: Build and test ${{ matrix.preset }}
+        build_preset: ["default-linux-x86_64-relwithdebinfo", "default-linux-x86_64-release-asan"]
+    name: Build and test ${{ matrix.build_preset }}
 #    uses: ./.github/workflows/build_and_test_ya_ondemand.yml
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
-      build_preset: ${{ matrix.preset }}
+      build_preset: ${{ matrix.build_preset }}
       build_target: "ydb/library/aclib/ut/"
       test_size: "small-medium"
       test_threads: 42
