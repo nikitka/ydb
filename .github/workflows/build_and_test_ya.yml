@@ -36,6 +36,9 @@ on:
       test_size:
         type: string
         default: "all"
+      folder_prefix:
+        type: string
+        default: "ya-"
 
 jobs:
   main:

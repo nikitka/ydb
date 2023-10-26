@@ -18,7 +18,7 @@ inputs:
     description: "folder prefix"
   build_preset:
     required: true
-    description: "build preset like default-linux-x86_64-relwithdebinfo"
+    description: "build preset like relwithdebinfo"
 runs:
   using: "composite"
   steps:
@@ -36,22 +36,22 @@ runs:
         host_bucket = %(bucket)s.storage.yandexcloud.net
         EOF
         
+        folder="${{ runner.arch == 'X64' && 'x86-64' || runner.arch == 'ARM64' && 'arm64' || 'unknown' }}"
+        
         case "${{ inputs.build_preset }}" in
-          default-linux-x86_64-relwithdebinfo)
-            folder=x86-64
+          relwithdebinfo)
             ;;
-          default-linux-x86_64-release-asan)
-            folder=x86-64-asan
+          release-asan)
+            folder+="-asan"
             ;;
-          default-linux-x86_64-release-tsan)
-            folder=x86-64-tsan
+          release-tsan)
+            folder+="-tsan"
             ;;
           *)
             echo "Invalid preset: ${{ inputs.build_preset }}"
             exit 1
             ;;
         esac
-        
 
         echo "S3_BUCKET_PATH=s3://${{ inputs.s3_bucket }}/${{ github.repository }}/${{github.workflow}}/${{ github.run_id }}/${{ inputs.folder_prefix }}${folder}" >> $GITHUB_ENV
         echo "S3_URL_PREFIX=${{ inputs.s3_endpoint }}/${{ inputs.s3_bucket }}/${{ github.repository }}/${{ github.workflow }}/${{ github.run_id }}/${{ inputs.folder_prefix }}${folder}" >> $GITHUB_ENV

@@ -6,8 +6,8 @@ inputs:
     description: "build target"
   build_preset:
     required: true
-    default: "default-linux-x86_64-relwithdebinfo"
-    description: "default-linux-x86_64-relwithdebinfo, default-linux-x86_64-release-asan, default-linux-x86_64-release-tsan"
+    default: "relwithdebinfo"
+    description: "relwithdebinfo, release-asan, release-tsan"
   bazel_remote_uri:
     required: false
     description: "bazel-remote endpoint"
@@ -55,15 +55,15 @@ runs:
         fi
         
         case "${{ inputs.build_preset }}" in
-          default-linux-x86_64-relwithdebinfo)
+          relwithdebinfo)
             build_type=relwithdebinfo
             ;;
-          default-linux-x86_64-release-asan)
+          release-asan)
             build_type=release
             extra_params+=(--sanitize="address")
             extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
             ;;
-          default-linux-x86_64-release-tsan)
+          release-tsan)
             build_type=release
             extra_params+=(--sanitize="thread")
             extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)

@@ -7,8 +7,8 @@ inputs:
 
   build_preset:
     required: true
-    default: "default-linux-x86_64-relwithdebinfo"
-    description: "default-linux-x86_64-relwithdebinfo, default-linux-x86_64-release-asan, default-linux-x86_64-release-tsan"
+    default: "relwithdebinfo"
+    description: "relwithdebinfo, release-asan, release-tsan"
   
   test_size:
     required: false
@@ -77,16 +77,18 @@ runs:
       run: |
         RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
         BRANCH_TAG="$GITHUB_REF_NAME"
+        ARCH="${{ runner.arch == 'X64' && 'x86-64' || runner.arch == 'ARM64' && 'arm64' || 'unknown' }}"
+        
         
         case "${{ inputs.build_preset }}" in
-          default-linux-x86_64-relwithdebinfo)
-            TESTMO_SOURCE=ya-x86-64
+          relwithdebinfo)
+            TESTMO_SOURCE="ya-${ARCH}"
             ;;
-          default-linux-x86_64-release-asan)
-            TESTMO_SOURCE=ya-x86-64-asan
+          release-asan)
+            TESTMO_SOURCE="ya-${ARCH}-asan"
             ;;
-          default-linux-x86_64-release-tsan)
-            TESTMO_SOURCE=ya-x86-64-tsan
+          release-tsan)
+            TESTMO_SOURCE="ya-${ARCH}-tsan"
             ;;
           *)
             echo "Invalid preset: ${{ inputs.build_preset }}"
@@ -158,15 +160,15 @@ runs:
         
         # FIXME: copy-paste from build_ya
         case "${{ inputs.build_preset }}" in
-          default-linux-x86_64-relwithdebinfo)
+          relwithdebinfo)
             build_type=relwithdebinfo
             ;;
-          default-linux-x86_64-release-asan)
+          release-asan)
             build_type=release
             extra_params+=(--sanitize="address")
             extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)
             ;;
-          default-linux-x86_64-release-tsan)
+          release-tsan)
             build_type=release
             extra_params+=(--sanitize="thread")
             extra_params+=(-DSKIP_JUNK -DUSE_EAT_MY_DATA -DDEBUGINFO_LINES_ONLY)

@@ -9,12 +9,12 @@ on:
         description: "limit build and test to specific target"
       build_preset:
         type: choice
-        default: "default-linux-x86_64-relwithdebinfo"
+        default: "relwithdebinfo"
         description: "Build preset"
         options:
-          - default-linux-x86_64-relwithdebinfo
-          - default-linux-x86_64-release-asan
-          - default-linux-x86_64-release-tsan
+          - relwithdebinfo
+          - release-asan
+          - release-tsan
       test_size:
         type: choice
         default: "all"
