@@ -213,7 +213,6 @@ runs:
           "$JUNIT_REPORT_XML"
 
     - name: write tests summary
-      if: always()
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -232,7 +231,7 @@ runs:
 
 
     - name: Unit test history upload results
-      if: always() && inputs.testman_token
+      if: inputs.testman_token
       shell: bash
       run: |
         testmo automation:run:submit-thread \
