@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [none]
+        sanitizer: [none, address]
     name: Build and test ${{ matrix.sanitizer != 'none' && format('({0} sanitizer)', matrix.sanitizer) || '' }}
 #    uses: ./.github/workflows/build_and_test_ya_ondemand.yml
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
