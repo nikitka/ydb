@@ -48,11 +48,11 @@ on:
           - all
       test_threads:
         type: string
-        default: 28
+        default: "28"
         description: "Test threads count"
       link_threads:
         type: string
-        default: 8
+        default: "8"
         description: "link threads count"
       run_build:
         type: boolean

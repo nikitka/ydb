@@ -42,10 +42,6 @@ on:
           - small
           - small-medium
           - all
-      runner_label:
-        type: string
-        default: "ya-make"
-        description: "runner label"
       run_build:
         type: boolean
         default: true
@@ -54,10 +50,6 @@ on:
         type: boolean
         default: true
         description: "run tests"
-      testmo_source:
-        type: string
-        default: "ya-x86-64"
-        description: "testmo source"
       test_threads:
         type: string
         default: "28"
@@ -66,6 +58,14 @@ on:
         type: string
         default: "8"
         description: "link threads count"
+      testmo_source:
+        type: string
+        default: "ya-x86-64"
+        description: "testmo source"
+      runner_label:
+        type: string
+        default: "ya-make"
+        description: "runner label"
   workflow_call:
     inputs:
       build_target:
