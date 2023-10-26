@@ -4,6 +4,11 @@ inputs:
   build_target:
     required: false
     description: "build target"
+
+  build_type:
+    required: false
+    default: "relwithdebinfo"
+    description: "build type (debug, release, profile, gprof, valgrind, valgrind-release, coverage, relwithdebinfo, minsizerel, debugnoasserts, fastdebug)"
     
   sanitizer:
     required: false
@@ -157,7 +162,7 @@ runs:
           extra_params+=(--bazel-remote-base-uri "${{ inputs.bazel_remote_uri }}")
         fi
         
-        ./ya test -k --build relwithdebinfo -D'BUILD_LANGUAGES=CPP PY3' \
+        ./ya test -k --build ${{ inputs.build_type }} -D'BUILD_LANGUAGES=CPP PY3' \
           --test-threads "${{ inputs.test_threads }}" --link-threads "${{ inputs.link_threads }}" \
           --cache-size 512G --regular-tests --do-not-output-stderrs -T \
           --stat --log-file "$LOG_DIR/ya_log.txt" --evlog-file "$LOG_DIR/ya_evlog.jsonl" \

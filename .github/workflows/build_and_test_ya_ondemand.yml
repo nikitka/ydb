@@ -11,6 +11,22 @@ on:
         type: string
         default: "ydb/"
         description: "limit build and test to specific target"
+      build_type:
+        type: choice
+        default: "relwithdebinfo"
+        description: "Build type"
+        options:
+          - debug
+          - release
+          - profile
+          - gprof
+          - valgrind
+          - valgrind-release
+          - coverage
+          - relwithdebinfo
+          - minsizerel
+          - debugnoasserts
+          - fastdebug
       sanitizer:
         type: choice
         default: "none"
@@ -54,6 +70,9 @@ on:
       build_target:
         type: string
         default: "ydb/"
+      build_type:
+        type: string
+        default: "relwithdebinfo"
       sanitizer:
         type: string
         default: "none"
@@ -126,6 +145,7 @@ jobs:
       runner_kind: self-hosted
       runner_label: ${{ needs.provide-runner.outputs.label }}
       build_target: ${{ inputs.build_target }}
+      build_type: ${{ inputs.build_type }}
       sanitizer: ${{ inputs.sanitizer }}
       run_build: ${{ inputs.run_build }}
       run_tests: ${{ inputs.run_tests }}

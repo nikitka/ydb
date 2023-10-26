@@ -7,6 +7,9 @@ on:
         type: string
         default: "ydb/"
         description: "limit build and test to specific target"
+      build_type:
+        type: string
+        default: "relwithdebinfo"
       sanitizer:
         type: string
         default: "none"
@@ -72,6 +75,7 @@ jobs:
       if: inputs.run_build
       with:
         build_target: ${{ inputs.build_target }}
+        build_type: ${{ inputs.build_type }}
         sanitizer: ${{ inputs.sanitizer }}
         bazel_remote_uri: ${{ vars.REMOTE_CACHE_URL_YA || '' }}
         bazel_remote_username: ${{ secrets.REMOTE_CACHE_USERNAME }}
@@ -83,6 +87,7 @@ jobs:
       if: inputs.run_tests
       with:
         build_target: ${{ inputs.build_target }}
+        build_type: ${{ inputs.build_type }}
         test_size: ${{ inputs.test_size }}
         sanitizer: ${{ inputs.sanitizer }}
         log_suffix: ${{ inputs.log_suffix }}

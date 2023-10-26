@@ -7,6 +7,22 @@ on:
         type: string
         default: "ydb/"
         description: "limit build and test to specific target"
+      build_type:
+        type: choice
+        default: "relwithdebinfo"
+        description: "Build type"
+        options:
+          - debug
+          - release
+          - profile
+          - gprof
+          - valgrind
+          - valgrind-release
+          - coverage
+          - relwithdebinfo
+          - minsizerel
+          - debugnoasserts
+          - fastdebug
       sanitizer:
         type: choice
         default: "none"
@@ -44,17 +60,20 @@ on:
         description: "testmo source"
       test_threads:
         type: string
-        default: 28
+        default: "28"
         description: "Test threads count"
       link_threads:
         type: string
-        default: 8
+        default: "8"
         description: "link threads count"
   workflow_call:
     inputs:
       build_target:
         type: string
         default: "ydb/"
+      build_type:
+        type: string
+        default: "relwithdebinfo"
       sanitizer:
         type: string
         default: "none"
@@ -89,6 +108,7 @@ jobs:
       runner_kind: provisioned
       runner_label: ${{ inputs.runner_label }}
       build_target: ${{ inputs.build_target }}
+      build_type: ${{ inputs.build_type }}
       sanitizer: ${{ inputs.sanitizer }}
       run_build: ${{ inputs.run_build }}
       run_tests: ${{ inputs.run_tests }}

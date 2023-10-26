@@ -4,6 +4,10 @@ inputs:
   build_target:
     required: false
     description: "build target"
+  build_type:
+    required: false
+    default: "relwithdebinfo"
+    description: "build type (debug, release, profile, gprof, valgrind, valgrind-release, coverage, relwithdebinfo, minsizerel, debugnoasserts, fastdebug)"
   sanitizer:
     required: false
     description: "sanitizer type (address, memory, thread, undefined, leak)"
@@ -58,7 +62,7 @@ runs:
           extra_params+=(--bazel-remote-put --dist-cache-evict-bins --add-result .o)
         fi
         
-        ./ya make --build relwithdebinfo --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
+        ./ya make --build ${{ inputs.build_type }} --force-build-depends -D'BUILD_LANGUAGES=CPP PY3' -T --stat  \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --dump-graph --dump-graph-to-file "$TMP_DIR/ya_graph.json" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
