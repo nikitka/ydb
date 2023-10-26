@@ -43,11 +43,11 @@ on:
         default: "ya-x86-64"
         description: "testmo source"
       test_threads:
-        type: number
+        type: string
         default: 28
         description: "Test threads count"
       link_threads:
-        type: number
+        type: string
         default: 8
         description: "link threads count"
   workflow_call:
@@ -68,11 +68,11 @@ on:
         type: boolean
         default: true
       test_threads:
-        type: number
+        type: string
         default: 28
         description: "Test threads count"
       link_threads:
-        type: number
+        type: string
         default: 8
         description: "link threads count"
       runner_label:
