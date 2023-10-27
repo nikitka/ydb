@@ -35,7 +35,10 @@ on:
         description: "link threads count"
       test_size:
         type: string
-        default: "all"
+        default: "small,medium,large"
+      test_type:
+        type: string
+        default: "unittest,py3test,py2test,pytest"
       folder_prefix:
         type: string
         default: "ya-"
@@ -82,6 +85,7 @@ jobs:
         build_target: ${{ inputs.build_target }}
         build_preset: ${{ inputs.build_preset }}
         test_size: ${{ inputs.test_size }}
+        test_type: ${{ inputs.test_type }}
         testman_token: ${{ secrets.TESTMO_TOKEN }}
         testman_url: ${{ vars.TESTMO_URL }}
         testman_project_id: ${{ vars.TESTMO_PROJECT_ID }}
