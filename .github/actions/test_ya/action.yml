@@ -219,16 +219,17 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        
+        mkdir $ARTIFACTS_DIR/summary/
+
         cat $SUMMARY_LINKS | python3 -c 'import sys; print(" | ".join([v for _, v in sorted([l.strip().split(" ", 1) for l in sys.stdin], key=lambda a: (int(a[0]), a))]))' >> $GITHUB_STEP_SUMMARY
         
-        mkdir $ARTIFACTS_DIR/summary/
+          platform_name=$(uname | tr '[:upper:]' '[:lower:]')-$(arch)
         
         .github/scripts/tests/generate-summary.py \
           --summary-out-path $ARTIFACTS_DIR/summary/ \
           --summary-url-prefix $S3_URL_PREFIX/summary/ \
           --test-history-url $TEST_HISTORY_URL \
-          --build-preset ${{ inputs.build_preset }} \
+          --build-preset "${platform_name}-${{ inputs.build_preset }}" \
           "Tests" ya-test.html "$JUNIT_REPORT_XML"
 
 
