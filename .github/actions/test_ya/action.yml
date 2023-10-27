@@ -12,9 +12,14 @@ inputs:
   
   test_size:
     required: false
-    default: "all"
+    default: "small,medium,large"
     description: "small or small-medium or all"
-
+  
+  test_type:
+    required: false
+    default: "unittest,py3test,py2test,pytest"
+    description: "run "
+  
   test_threads:
     required: false
     default: "28"
@@ -141,23 +146,6 @@ runs:
       run: |
         extra_params=()
         
-        case "${{ inputs.test_size }}" in
-          small)
-            extra_params+=(-t)
-            ;;
-          small-medium)
-            extra_params+=(-tt)
-            ;;
-          all)
-            extra_params+=(-ttt)
-            ;;
-          *)
-            echo "incorrect test size ${{ inputs.test_size }}"
-            exit -1
-            ;;
-        esac
-        
-        
         # FIXME: copy-paste from build_ya
         case "${{ inputs.build_preset }}" in
           relwithdebinfo)
@@ -190,6 +178,7 @@ runs:
         fi
         sed -i 's/^END()/SKIP_TEST("wait for KIKIMR-19209") END()/' ydb/library/yql/tests/sql/sql2yql/ya.make
         ./ya test -k --build "${build_type}" -D'BUILD_LANGUAGES=CPP PY3' \
+          --test-size="${{ inputs.test_size }}" --test-type="${{ inputs.test_type }}" \
           --test-threads "${{ inputs.test_threads }}" --link-threads "${{ inputs.link_threads }}" \
           --cache-size 512G --regular-tests --do-not-output-stderrs -T \
           --stat --log-file "$LOG_DIR/ya_log.txt" --evlog-file "$LOG_DIR/ya_evlog.jsonl" \
