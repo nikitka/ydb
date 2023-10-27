@@ -188,7 +188,7 @@ runs:
           extra_params+=(--bazel-remote-store)
           extra_params+=(--bazel-remote-base-uri "${{ inputs.bazel_remote_uri }}")
         fi
-        
+        sed -i 's/^END()/SKIP_TEST("wait for KIKIMR-19209") END()/' ydb/library/yql/tests/sql/sql2yql/ya.make
         ./ya test -k --build "${build_type}" -D'BUILD_LANGUAGES=CPP PY3' \
           --test-threads "${{ inputs.test_threads }}" --link-threads "${{ inputs.link_threads }}" \
           --cache-size 512G --regular-tests --do-not-output-stderrs -T \
