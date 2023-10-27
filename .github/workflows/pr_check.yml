@@ -107,8 +107,8 @@ jobs:
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
       build_preset: ${{ matrix.build_preset }}
-#      build_target: "ydb/library/aclib/ut/"
-      build_target: "ydb/"
+      build_target: "ydb/library/aclib/ut/"
+#      build_target: "ydb/"
       test_size: "small-medium"
       test_threads: 42
 #      test_size: "small"

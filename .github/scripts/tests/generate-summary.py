@@ -279,9 +279,9 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
 def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
 
     if summary.is_failed:
-        result = f":red_circle: Some tests for {build_preset} failed"
+        result = f":red_circle: **{build_preset}**: some tests FAILED"
     else:
-        result = f":green_circle: All tests for {build_preset} passed"
+        result = f":green_circle: **{build_preset}**: all tests PASSED"
 
     body = [f"{result} for commit {pr.head.sha}."]
 
