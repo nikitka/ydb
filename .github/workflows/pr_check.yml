@@ -108,6 +108,6 @@ jobs:
       build_preset: ${{ matrix.build_preset }}
       build_target: "ydb/"
       test_size: "small,medium"
-      test_type: "unittest"
+      test_type: "unittest,py3test,py2test,pytest"
       test_threads: 52
     secrets: inherit
