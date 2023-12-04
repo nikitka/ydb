@@ -108,5 +108,5 @@ jobs:
       link_threads: ${{ inputs.link_threads }}
       test_threads: ${{ inputs.test_threads }}
       cache_tests: ${{ inputs.cache_tests }}
-      put_build_results_to_cache: ${{ inputs.put_build_results_to_cache }}
+      put_build_results_to_cache: ${{ inputs.put_build_results_to_cache || true }}
     secrets: inherit
