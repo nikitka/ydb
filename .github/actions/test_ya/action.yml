@@ -157,7 +157,8 @@ runs:
         echo "::debug::save tests reports"
         ./ya test "${params[@]}" \
           --stat --log-file "$LOG_DIR/ya_log.txt" --evlog-file "$LOG_DIR/ya_evlog.jsonl" \
-          --junit "$JUNIT_REPORT_XML" --output "$OUT_DIR" "${params[@]}" || (
+          --cache-tests --dist-cache-evict-bins --no-dir-outputs --test-node-output-limit 100000 --drop-graph-result-before-tests \
+          --junit "$JUNIT_REPORT_XML" --output "$OUT_DIR" || (
             RC=$?
             if [ $RC -ne 0 ]; then
               echo "ya test returned $RC, check existence $JUNIT_REPORT_XML"
