@@ -1,6 +1,7 @@
 #include <library/cpp/testing/unittest/registar.h>
 #include <library/cpp/string_utils/base64/base64.h>
 #include "aclib.h"
+#include "unistd.h"
 
 using namespace NACLib;
 
@@ -288,5 +289,8 @@ Y_UNIT_TEST_SUITE(ACLib) {
         TUserToken user("xenoxeno@staff", {});
         ui32 access = EAccessRights::DescribeSchema;
         UNIT_ASSERT(securityObject.CheckAccess(access, user));
+    }
+    Y_UNIT_TEST(RemoveMe) {
+        sleep(15);
     }
 }
