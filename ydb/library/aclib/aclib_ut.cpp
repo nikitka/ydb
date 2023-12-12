@@ -1,7 +1,9 @@
 #include <library/cpp/testing/unittest/registar.h>
 #include <library/cpp/string_utils/base64/base64.h>
 #include "aclib.h"
-#include "unistd.h"
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 using namespace NACLib;
 
@@ -291,6 +293,7 @@ Y_UNIT_TEST_SUITE(ACLib) {
         UNIT_ASSERT(securityObject.CheckAccess(access, user));
     }
     Y_UNIT_TEST(RemoveMe) {
-        sleep(15);
+        srand(time(NULL));
+        sleep(rand() % 16 + 15);
     }
 }
