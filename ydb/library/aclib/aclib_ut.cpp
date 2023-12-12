@@ -292,8 +292,11 @@ Y_UNIT_TEST_SUITE(ACLib) {
         ui32 access = EAccessRights::DescribeSchema;
         UNIT_ASSERT(securityObject.CheckAccess(access, user));
     }
+    Y_UNIT_TEST(RemoveZero) {
+        UNIT_ASSERT_EQUAL(1, 1);
+    }
     Y_UNIT_TEST(RemoveMe) {
         srand(time(NULL));
-        sleep(rand() % 16 + 15);
+        sleep(rand() % 2 + 15);
     }
 }
