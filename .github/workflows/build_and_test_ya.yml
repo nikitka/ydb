@@ -56,7 +56,7 @@ jobs:
     runs-on: [ self-hosted, "${{ inputs.runner_label }}", "${{ inputs.runner_additional_label || inputs.runner_label }}"]
     steps:
     - name: Checkout PR
-      uses: ./.github/actions/checkout
+      uses: nikitka/ydb/.github/actions/checkout@main
       if: github.event.pull_request.head.sha != ''
       with:
         ref: ${{ github.event.pull_request.head.sha }}
