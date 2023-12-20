@@ -33,10 +33,12 @@ runs:
         sparse-checkout-cone-mode: false
         sparse-checkout: |
           .github/actions
+          .github/scripts
           ydb/ci
       
     - name: replace repository .github, ydb/ci
       shell: bash
       run: |
         rsync -av --delete repo-main/.github/actions/ .github/actions/
+        rsync -av --delete repo-main/.github/scripts/ .github/scripts/
         rsync -av --delete repo-main/ydb/ci/ ydb/ci/
