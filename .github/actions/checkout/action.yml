@@ -30,6 +30,7 @@ runs:
       with:
         ref: main
         path: repo-main
+        sparse-checkout-cone-mode: false
         sparse-checkout: |
           .github/actions
           ydb/ci
