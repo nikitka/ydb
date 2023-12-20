@@ -61,7 +61,7 @@ jobs:
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout
-      uses: ./.github/actions/checkout@tst-repo
+      uses: nikitka/ydb/.github/actions/checkout@tst-repo
       if: github.event.pull_request.head.sha == ''
 
     - name: Prepare s3cmd

@@ -54,7 +54,7 @@ jobs:
     runs-on: [ self-hosted, "${{ inputs.runner_label }}" ]
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: nikitka/ydb/.github/actions/checkout@tst-repo
     - name: Build
       uses: ./.github/actions/build
       if: inputs.run_build

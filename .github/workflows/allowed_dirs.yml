@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: nikitka/ydb/.github/actions/checkout@tst-repo
 
     - name: Check dirs
       run: ${{github.workspace}}/.github/check_dirs.sh  ${{github.workspace}}
