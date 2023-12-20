@@ -41,3 +41,4 @@ runs:
         rsync -av --delete repo-main/.github/actions/ .github/actions/
         rsync -av --delete repo-main/.github/scripts/ .github/scripts/
         rsync -av --delete repo-main/ydb/ci/ ydb/ci/
+        rm -rf repo-main/
