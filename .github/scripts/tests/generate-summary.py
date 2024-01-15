@@ -317,15 +317,12 @@ def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, bu
     for c in pr.get_issue_comments():
         if c.body.startswith(header):
             comment = c
-            body = []
+            # FIXME: here
+            body = [header]
 
-    if body is None:
-        body = [
-            header.format(run_number),
-            "> [!NOTE]",
-            "> This is an automated comment that will be appended during run.",
-            "",
-        ]
+    body = [
+        header,
+    ]
 
     body.extend(get_comment_text(pr, summary, build_preset, test_history_url))
 

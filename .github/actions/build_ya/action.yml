@@ -110,7 +110,7 @@ runs:
           const issue_number = context.issue.number;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const preset = `${steps.build.outputs.platform_name$}-${inputs.build_preset}`;
+          const preset = `${steps.build.outputs.platform_name}-${inputs.build_preset}`;
           
           
           core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
