@@ -86,6 +86,9 @@ runs:
         echo "::debug::get version"
         ./ya --version
         
+        platform_name=$(uname | tr '[:upper:]' '[:lower:]')-$(arch)
+        echo "platform_name=$platform_name" >> $GITHUB_OUTPUT
+        
         ./ya make -k --build "${build_type}" --force-build-depends -D'BUILD_LANGUAGES=CPP PY3 PY2 GO' -T --stat -DCONSISTENT_DEBUG \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
@@ -96,18 +99,25 @@ runs:
           )
 
     - name: comment-if-build-failed
-      if: steps.build.output.status == 'failed' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+      if: steps.build.outputs.status == 'failed' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
       uses: actions/github-script@v6
       with:
         script: |
+          // https://github.com/actions/toolkit/issues/1124
+          const inputs =  ${{ toJSON(inputs) }};
+          const steps =  ${{ toJSON(steps) }};
+          
           const issue_number = context.issue.number;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
+          const preset = `${steps.build.outputs.platform_name$}-${inputs.build_preset}`;
+          
+          
+          core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
         
-          core.info(`Checking existing comment for pr=${context.issue.number}, preset=${core.getInput("input_preset")}`);
+          const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->\n`;
+          const body = header + `:x: Build failed for **${preset}**. Please check build logs.`;
         
-          const header = `<!-- status pr=${context.issue.number}, preset=${core.getInput("input_preset")} -->`
-          const body = `:x: Build failed for **${core.getInput("input_preset")}**. Please check build logs`
           const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
           
           const existing = comments.filter((c) => c.body.startsWith(header));
