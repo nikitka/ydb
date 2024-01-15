@@ -99,7 +99,7 @@ runs:
           )
 
     - name: comment-if-build-failed
-      if: steps.build.outputs.status == 'failed' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       uses: actions/github-script@v6
       with:
         script: |
@@ -110,17 +110,27 @@ runs:
           const issue_number = context.issue.number;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
+          const logs_url = `${context.serverUrl}${owner}/${repo}/commit/${context.sha}/checks/${context.runId}/logs`;
           const preset = `${steps.build.outputs.platform_name}-${inputs.build_preset}`;
           const test_result_start_mark = '<!--test-status-->';
           
           
           core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
         
-          const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->\n`;
-          const body = header +
-            `:x: Build failed for **${preset}**. Please check build logs.` +
-            `\n${test_result_start_mark}`;
-        
+          const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->`;
+          
+          let body = [header];
+          
+          if (steps.build.outputs.status == 'failed') {
+            body.push(`:x: Build failed for **${preset}**. Please check [build logs](${logs_url}).`);
+          } else {
+            body.push(`Build passed for **${preset}**. Please wait for the test results..`);
+          }
+
+          body.push(`\n${test_result_start_mark}`);
+          
+          body = body.join("\n");
+          
           const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
           
           const existing = comments.filter((c) => c.body.startsWith(header));
