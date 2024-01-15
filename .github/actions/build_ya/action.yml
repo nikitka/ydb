@@ -92,11 +92,20 @@ runs:
         ./ya make -k --build "${build_type}" --force-build-depends -D'BUILD_LANGUAGES=CPP PY3 PY2 GO' -T --stat -DCONSISTENT_DEBUG \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
-          "${extra_params[@]}" || (
+          "${extra_params[@]}" |& tee $TMP_DIR/ya_make.log || (
               RC=$?
               echo "::debug::ya make RC=$RC"
               echo "status=failed" >> $GITHUB_OUTPUT
           )
+
+    - name: sync logs to s3
+      if: always()
+      shell: bash
+      run: |
+        echo "::group::s3-sync"
+        s3cmd sync --acl-private --exclude="ya_make.log" --no-progress --stats --no-check-md5 "$TMP_DIR/" "$S3_BUCKET_PATH/build_logs/"
+        s3cmd sync --acl-public --no-progress --stats --no-check-md5 "$TMP_DIR/ya_make.log" "$S3_BUCKET_PATH/build_logs/"
+        echo "::endgroup::"
 
     - name: comment-if-build-failed
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
@@ -110,13 +119,16 @@ runs:
           const issue_number = context.issue.number;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
-          const logs_url = `${context.serverUrl}${owner}/${repo}/commit/${context.sha}/checks/${context.runId}/logs`;
           const preset = `${steps.build.outputs.platform_name}-${inputs.build_preset}`;
           const test_result_start_mark = '<!--test-status-->';
           
           
+          const { data: workflow } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
+          
+          const logs_url = `${process.env.S3_URL_PREFIX}/build_logs/ya_make.log`;
+          
           core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
-        
+          
           const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->`;
           
           let body = [header];
@@ -126,7 +138,7 @@ runs:
           } else {
             body.push(`Build passed for **${preset}**. Please wait for the test results..`);
           }
-
+          
           body.push(`\n${test_result_start_mark}`);
           
           body = body.join("\n");
@@ -138,7 +150,7 @@ runs:
           if (existing.length > 0) {
             const comment = existing[existing.length - 1];
             core.info(`Rewrite comment ${comment.id}`);
-
+          
             await github.rest.issues.updateComment({
                 owner, repo,
                 body,
@@ -146,18 +158,9 @@ runs:
             });
           } else {
             core.info(`Create new comment`);
-            
+          
             await github.rest.issues.createComment({owner, repo, issue_number, body});
           }
-
-
-    - name: sync logs to s3
-      if: always()
-      shell: bash
-      run: |
-        echo "::group::s3-sync"
-        s3cmd sync --acl-private --no-progress --stats --no-check-md5 "$TMP_DIR/" "$S3_BUCKET_PATH/build_logs/"
-        echo "::endgroup::"
 
     - name: show free space
       if: always()
