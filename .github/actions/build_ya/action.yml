@@ -28,11 +28,25 @@ runs:
     - name: Init
       id: init
       shell: bash
+      env:
+        build_preset: ${{ inputs.build_preset }}
       run: |
         echo "SHELLOPTS=xtrace" >> $GITHUB_ENV
         export TMP_DIR=$(pwd)/tmp_build
         echo "TMP_DIR=$TMP_DIR" >> $GITHUB_ENV
         rm -rf $TMP_DIR && mkdir $TMP_DIR
+        
+        platform_name=$(uname | tr '[:upper:]' '[:lower:]')-$(arch)
+        
+        echo "BUILD_PRESET=$platform_name-$build_preset" >> $GITHUB_ENV
+
+    - name: comment-build-start
+      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        echo "Build **$BUILD_PRESET** has just started. Please wait.." | .github/scripts/tests/comment-pr.py --rewrite -
     
     - name: build
       id: build
@@ -86,9 +100,6 @@ runs:
         echo "::debug::get version"
         ./ya --version
         
-        platform_name=$(uname | tr '[:upper:]' '[:lower:]')-$(arch)
-        echo "platform_name=$platform_name" >> $GITHUB_OUTPUT
-        
         ./ya make -k --build "${build_type}" --force-build-depends -D'BUILD_LANGUAGES=CPP PY3 PY2 GO' -T --stat -DCONSISTENT_DEBUG \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
@@ -109,58 +120,19 @@ runs:
 
     - name: comment-if-build-failed
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          // https://github.com/actions/toolkit/issues/1124
-          const inputs =  ${{ toJSON(inputs) }};
-          const steps =  ${{ toJSON(steps) }};
-          
-          const issue_number = context.issue.number;
-          const owner = context.repo.owner;
-          const repo = context.repo.repo;
-          const preset = `${steps.build.outputs.platform_name}-${inputs.build_preset}`;
-          const test_result_start_mark = '<!--test-status-->';
-          
-          
-          const { data: workflow } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
-          
-          const logs_url = `${process.env.S3_URL_PREFIX}/build_logs/ya_make.log`;
-          
-          core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
-          
-          const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->`;
-          
-          let body = [header];
-          
-          if (steps.build.outputs.status == 'failed') {
-            body.push(`:x: Build failed for **${preset}**. Please check [build logs](${logs_url}).`);
-          } else {
-            body.push(`Build passed for **${preset}**. Please wait for the test results..`);
-          }
-          
-          body.push(`\n${test_result_start_mark}`);
-          
-          body = body.join("\n");
-          
-          const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
-          
-          const existing = comments.filter((c) => c.body.startsWith(header));
-          
-          if (existing.length > 0) {
-            const comment = existing[existing.length - 1];
-            core.info(`Rewrite comment ${comment.id}`);
-          
-            await github.rest.issues.updateComment({
-                owner, repo,
-                body,
-                comment_id: comment.id,
-            });
-          } else {
-            core.info(`Create new comment`);
-          
-            await github.rest.issues.createComment({owner, repo, issue_number, body});
-          }
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        log_url="$S3_URL_PREFIX/build_logs/ya_make.log"
+
+        if [ "${{ steps.build.outputs.status }}" == "failed" ]; then
+          msg=":x: Build failed. Please check [build logs]($log_url). Tests will be run shortly..";
+        else
+          msg="Build passed. Please wait for the test results.."
+        fi
+        
+        echo "$msg" | .github/scripts/tests/comment-pr.py -
 
     - name: show free space
       if: always()

@@ -12,6 +12,7 @@ from operator import attrgetter
 from typing import List, Optional, Dict
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from junit_utils import get_property_value, iter_xml_files
+from gh_status import update_pr_comment_text
 
 
 class TestStatus(Enum):
@@ -155,7 +156,7 @@ class TestSummary:
         github_srv = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
         repo = os.environ.get("GITHUB_REPOSITORY", "ydb-platform/ydb")
 
-        footnote_url = f"{github_srv}/{repo}/tree/main/.github/config"
+        footnote_url = f"{github_srv}/{repo}/tree/main/.github/config/muted_ya.txt"
 
         footnote = "[^1]" if add_footnote else f'<sup>[?]({footnote_url} "All mute rules are defined here")</sup>'
 
@@ -290,13 +291,13 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
 def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
     if summary.is_empty:
         return [
-            f":red_circle: **{build_preset}**: Test run completed, no test results found for commit {pr.head.sha}. "
+            f":red_circle: Test run completed, no test results found for commit {pr.head.sha}. "
             f"Please check build logs."
         ]
     elif summary.is_failed:
-        result = f":red_circle: **{build_preset}**: some tests FAILED"
+        result = f":red_circle: some tests FAILED"
     else:
-        result = f":green_circle: **{build_preset}**: all tests PASSED"
+        result = f":green_circle: all tests PASSED"
 
     body = [f"{result} for commit {pr.head.sha}."]
 
@@ -307,35 +308,6 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, t
     body.extend(summary.render())
 
     return body
-
-
-def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
-    header = f"<!-- status pr={pr.number}, preset={build_preset} -->"
-    test_result_start_mark = '<!--test-status-->'
-
-    comment = body = None
-
-    for c in pr.get_issue_comments():
-        if c.body.startswith(header):
-            comment = c
-            if test_result_start_mark in comment.body:
-                pos = comment.body.index(test_result_start_mark) + len(test_result_start_mark)
-                body = [c.body[:pos]]
-
-    if body is None:
-        body = [
-            header,
-            test_result_start_mark
-        ]
-
-    body.extend(get_comment_text(pr, summary, build_preset, test_history_url))
-
-    body = "\n".join(body)
-
-    if comment is None:
-        pr.create_issue_comment(body)
-    else:
-        comment.edit(body)
 
 
 def main():
@@ -363,9 +335,11 @@ def main():
         with open(os.environ["GITHUB_EVENT_PATH"]) as fp:
             event = json.load(fp)
 
-        run_number = int(os.environ.get("GITHUB_RUN_NUMBER"))
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
-        update_pr_comment(run_number, pr, summary, args.build_preset, args.test_history_url)
+
+        text = get_comment_text(pr, summary, args.build_preset, args.test_history_url)
+
+        update_pr_comment_text(pr, args.build_preset, text='\n'.join(text), rewrite=False)
 
 
 if __name__ == "__main__":
