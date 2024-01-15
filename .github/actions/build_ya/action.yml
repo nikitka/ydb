@@ -35,6 +35,7 @@ runs:
         rm -rf $TMP_DIR && mkdir $TMP_DIR
     
     - name: build
+      id: build
       shell: bash
       run: |
         extra_params=()
@@ -91,7 +92,41 @@ runs:
           "${extra_params[@]}" || (
               RC=$?
               echo "::debug::ya make RC=$RC"
+              echo "status=failed" >> $GITHUB_OUTPUT
           )
+
+    - name: comment-if-build-failed
+      if: steps.build.output.status == 'failed' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const issue_number = context.issue.number;
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+        
+          core.info(`Checking existing comment for pr=${context.issue.number}, preset=${core.getInput("input_preset")}`);
+        
+          const header = `<!-- status pr=${context.issue.number}, preset=${core.getInput("input_preset")} -->`
+          const body = `:x: Build failed for **${core.getInput("input_preset")}**. Please check build logs`
+          const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
+          
+          const existing = comments.filter((c) => c.body.startsWith(header));
+          
+          if (existing.length > 0) {
+            const comment = existing[existing.length - 1];
+            core.info(`Rewrite comment ${comment.id}`);
+
+            await github.rest.issues.updateComment({
+                owner, repo,
+                body,
+                comment_id: comment.id,
+            });
+          } else {
+            core.info(`Create new comment`);
+            
+            await github.rest.issues.createComment({owner, repo, issue_number, body});
+          }
+
 
     - name: sync logs to s3
       if: always()
