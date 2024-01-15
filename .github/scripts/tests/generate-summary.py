@@ -311,18 +311,22 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, t
 
 def update_pr_comment(run_number: int, pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
     header = f"<!-- status pr={pr.number}, preset={build_preset} -->"
+    test_result_start_mark = '<!--test-status-->'
 
     comment = body = None
 
     for c in pr.get_issue_comments():
         if c.body.startswith(header):
             comment = c
-            # FIXME: here
-            body = [header]
+            if test_result_start_mark in comment.body:
+                pos = comment.body.index(test_result_start_mark) + len(test_result_start_mark)
+                body = [c.body[:pos]]
 
-    body = [
-        header,
-    ]
+    if body is None:
+        body = [
+            header,
+            test_result_start_mark
+        ]
 
     body.extend(get_comment_text(pr, summary, build_preset, test_history_url))
 

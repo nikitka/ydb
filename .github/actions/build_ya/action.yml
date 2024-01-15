@@ -111,12 +111,15 @@ runs:
           const owner = context.repo.owner;
           const repo = context.repo.repo;
           const preset = `${steps.build.outputs.platform_name}-${inputs.build_preset}`;
+          const test_result_start_mark = '<!--test-status-->';
           
           
           core.info(`Checking existing comment for pr=${context.issue.number}, preset=${preset}`);
         
           const header = `<!-- status pr=${context.issue.number}, preset=${preset} -->\n`;
-          const body = header + `:x: Build failed for **${preset}**. Please check build logs.`;
+          const body = header +
+            `:x: Build failed for **${preset}**. Please check build logs.` +
+            `\n${test_result_start_mark}`;
         
           const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
           
