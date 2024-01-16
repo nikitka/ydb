@@ -292,15 +292,15 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
 def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
     if summary.is_empty:
         return [
-            f":red_circle: Test run completed, no test results found for commit {pr.head.sha}. "
+            f":red_circle: `{{cur_date}}` Test run completed, no test results found for commit {pr.head.sha}. "
             f"Please check build logs."
         ]
     elif summary.is_failed:
-        result = f":red_circle: some tests FAILED"
+        result = f":red_circle: `{{cur_date}}` some tests FAILED"
     else:
-        result = f":green_circle: all tests PASSED"
+        result = f":green_circle: `{{cur_date}}` all tests PASSED"
 
-    body = [f"{result} for commit {pr.head.sha} at {{cur_date}}."]
+    body = [f"{result} for commit {pr.head.sha}."]
 
     if test_history_url:
         body.append("")

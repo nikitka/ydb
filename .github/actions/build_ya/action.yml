@@ -46,7 +46,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        echo "Build **$BUILD_PRESET** started at {cur_date}. Please wait.." | .github/scripts/tests/comment-pr.py --rewrite -
+        echo -n ":green_circle: \`{cur_date}\` Build **$BUILD_PRESET** started. Please wait.." | .github/scripts/tests/comment-pr.py --rewrite -
     
     - name: build
       id: build
@@ -127,12 +127,12 @@ runs:
         log_url="$S3_URL_PREFIX/build_logs/ya_make.log"
 
         if [ "${{ steps.build.outputs.status }}" == "failed" ]; then
-          msg=":x: Build failed at {cur_date}. Please check [build logs]($log_url). Tests will be run shortly..";
+          msg=":red_circle: \`{cur_date}\` Build failed. Please check [build logs]($log_url). Tests will be run shortly..";
         else
-          msg="Build passed at {cur_date}. Please wait for the test results.."
+          msg=":green_circle: \`{cur_date}\` Build passed. Please wait for the test results.."
         fi
         
-        echo "$msg" | .github/scripts/tests/comment-pr.py -
+        echo -n "$msg" | .github/scripts/tests/comment-pr.py -
 
     - name: show free space
       if: always()

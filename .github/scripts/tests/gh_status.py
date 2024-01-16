@@ -3,7 +3,7 @@ from github.PullRequest import PullRequest
 
 
 def get_timestamp():
-    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrite: bool):
@@ -15,7 +15,7 @@ def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrit
             print(f"found comment id={c.id}")
             comment = c
             if not rewrite:
-                body = [c.body, ""]
+                body = [c.body]
             break
 
     if body is None:
