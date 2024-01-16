@@ -66,6 +66,7 @@ runs:
         echo "TESTMO_TOKEN=${{ inputs.testman_token }}" >> $GITHUB_ENV
         echo "TESTMO_URL=${{ inputs.testman_url }}" >> $GITHUB_ENV
         echo "SUMMARY_LINKS=$(mktemp)" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
     
     - name: prepare
       shell: bash
@@ -213,6 +214,8 @@ runs:
         echo "::debug::get version"
         ./ya --version
         
+        echo "Tests are running..." | .github/scripts/tests/comment-pr.py
+        
         if [ ! -z "${{ inputs.bazel_remote_username }}" ]; then
           echo "::debug::start tests"
 
@@ -300,8 +303,6 @@ runs:
     - name: write tests summary
       shell: bash
       if: always()
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
       run: |
         mkdir $ARTIFACTS_DIR/summary/
         

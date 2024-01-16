@@ -9,10 +9,19 @@ from gh_status import update_pr_comment_text
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--rewrite', dest="rewrite", action='store_true')
-    parser.add_argument('text', type=argparse.FileType('r'))
+    parser.add_argument("--rewrite", dest="rewrite", action="store_true")
+    parser.add_argument("--color", dest="color", default="white")
+    parser.add_argument("--fail", dest="fail", action="store_true")
+    parser.add_argument("--ok", dest="ok", action="store_true")
+    parser.add_argument("text", type=argparse.FileType("r"), nargs="?", default="-")
 
     args = parser.parse_args()
+    color = args.color
+
+    if args.ok:
+        color = 'green'
+    elif args.fail:
+        color = 'red'
 
     build_preset = os.environ["BUILD_PRESET"]
 
@@ -23,8 +32,8 @@ def main():
 
     pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
 
-    update_pr_comment_text(pr, build_preset, args.text.read(), args.rewrite)
+    update_pr_comment_text(pr, build_preset, color, args.text.read().rstrip(), args.rewrite)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

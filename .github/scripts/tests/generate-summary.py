@@ -289,18 +289,20 @@ def gen_summary(summary_url_prefix, summary_out_folder, paths):
     return summary
 
 
-def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, test_history_url: str):
+def get_comment_text(pr: PullRequest, summary: TestSummary, test_history_url: str):
     if summary.is_empty:
         return [
-            f":red_circle: `{{cur_date}}` Test run completed, no test results found for commit {pr.head.sha}. "
+            f"Test run completed, no test results found for commit {pr.head.sha}. "
             f"Please check build logs."
         ]
     elif summary.is_failed:
-        result = f":red_circle: `{{cur_date}}` Some tests FAILED"
+        result = f"Some tests failed, follow the links below."
     else:
-        result = f":green_circle: `{{cur_date}}` All tests PASSED"
+        result = f"Tests successful."
 
-    body = [f"{result} for commit {pr.head.sha}."]
+    body = [
+        result
+    ]
 
     if test_history_url:
         body.append("")
@@ -338,9 +340,14 @@ def main():
 
         pr = gh.create_from_raw_data(PullRequest, event["pull_request"])
 
-        text = get_comment_text(pr, summary, args.build_preset, args.test_history_url)
+        text = get_comment_text(pr, summary, args.test_history_url)
 
-        update_pr_comment_text(pr, args.build_preset, text='\n'.join(text), rewrite=False)
+        if summary.is_empty | summary.is_failed:
+            color = 'red'
+        else:
+            color = 'green'
+
+        update_pr_comment_text(pr, args.build_preset, color, text='\n'.join(text), rewrite=False)
 
 
 if __name__ == "__main__":

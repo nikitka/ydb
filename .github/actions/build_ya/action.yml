@@ -39,15 +39,8 @@ runs:
         platform_name=$(uname | tr '[:upper:]' '[:lower:]')-$(arch)
         
         echo "BUILD_PRESET=$platform_name-$build_preset" >> $GITHUB_ENV
+        echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
 
-    - name: comment-build-start
-      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      run: |
-        echo -n ":green_circle: \`{cur_date}\` Build **$BUILD_PRESET** started. Please wait.." | .github/scripts/tests/comment-pr.py --rewrite -
-    
     - name: build
       id: build
       shell: bash
@@ -100,6 +93,8 @@ runs:
         echo "::debug::get version"
         ./ya --version
         
+        echo "Build **${BUILD_PRESET}** is running ..." | .github/scripts/tests/comment-pr.py
+        
         ./ya make -k --build "${build_type}" --force-build-depends -D'BUILD_LANGUAGES=CPP PY3 PY2 GO' -T --stat -DCONSISTENT_DEBUG \
           --log-file "$TMP_DIR/ya_log.txt" --evlog-file "$TMP_DIR/ya_evlog.jsonl" \
           --cache-size 512G --link-threads "${{ inputs.link_threads }}" \
@@ -120,19 +115,15 @@ runs:
 
     - name: comment-if-build-failed
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
       shell: bash
       run: |
         log_url="$S3_URL_PREFIX/build_logs/ya_make.log"
 
         if [ "${{ steps.build.outputs.status }}" == "failed" ]; then
-          msg=":red_circle: \`{cur_date}\` Build failed. Please check [build logs]($log_url). Tests will be run shortly..";
+          echo "Build failed. see the [build logs]($log_url)." | .github/scripts/tests/comment-pr.py --fail
         else
-          msg=":green_circle: \`{cur_date}\` Build passed. Please wait for the test results.."
+          echo "Build successful." | .github/scripts/tests/comment-pr.py
         fi
-        
-        echo -n "$msg" | .github/scripts/tests/comment-pr.py -
 
     - name: show free space
       if: always()

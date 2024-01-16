@@ -3,11 +3,11 @@ from github.PullRequest import PullRequest
 
 
 def get_timestamp():
-    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
-def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrite: bool):
-    header = f'<!-- status pr={pr.number}, preset={build_preset} -->'
+def update_pr_comment_text(pr: PullRequest, build_preset: str, color: str, text: str, rewrite: bool):
+    header = f"<!-- status pr={pr.number}, preset={build_preset} -->"
 
     body = comment = None
     for c in pr.get_issue_comments():
@@ -21,11 +21,10 @@ def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrit
     if body is None:
         body = [header]
 
-    body.append(text)
+    indicator = f":{color}_circle:"
+    body.append(f"{indicator} `{get_timestamp()}` {text}")
 
-    body = '\n'.join(body)
-
-    body = body.replace("{cur_date}", get_timestamp())
+    body = "\n".join(body)
 
     if comment is None:
         print(f"post new comment")

@@ -4,8 +4,6 @@
 #include <util/datetime/base.h>
 #include <ydb/library/aclib/protos/aclib.pb.h>
 
-hello
-
 namespace NACLib {
 
 #define BUILTIN_ACL_DOMAIN "builtin"

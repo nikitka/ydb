@@ -11,8 +11,9 @@ Y_UNIT_TEST_SUITE(ACLib) {
     static const TVector<TString> CatGroups = {"Animals", "Cats", "Readers"};
     static const TString Dog = "dog@bookstore";
     static const TVector<TString> DogGroups = {"Animals", "Dogs", "Writers"};
-
+    
     Y_UNIT_TEST(TestUsers) {
+        UNIT_ASSERT(false == true);
         TSecurityObject rootACL(James, true);
 
         rootACL.AddAccess(EAccessType::Allow, EAccessRights::GenericRead, Cat, EInheritanceType::InheritContainer);
