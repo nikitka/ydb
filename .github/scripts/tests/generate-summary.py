@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import dataclasses
+import datetime
 import os
 import re
 import json
@@ -299,7 +300,7 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, t
     else:
         result = f":green_circle: all tests PASSED"
 
-    body = [f"{result} for commit {pr.head.sha}."]
+    body = [f"{result} for commit {pr.head.sha} at {{cur_date}}."]
 
     if test_history_url:
         body.append("")

@@ -1,4 +1,9 @@
+import datetime
 from github.PullRequest import PullRequest
+
+
+def get_timestamp():
+    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrite: bool):
@@ -19,6 +24,8 @@ def update_pr_comment_text(pr: PullRequest, build_preset: str, text: str, rewrit
     body.append(text)
 
     body = '\n'.join(body)
+
+    body = body.replace("{cur_date}", get_timestamp())
 
     if comment is None:
         print(f"post new comment")
