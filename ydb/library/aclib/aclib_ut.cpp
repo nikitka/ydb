@@ -4,6 +4,8 @@
 
 using namespace NACLib;
 
+wrong syntax
+
 Y_UNIT_TEST_SUITE(ACLib) {
     static const TString James = "james@bookstore";
     static const TVector<TString> JamesGroups = {"Humans", "Administrators"};
