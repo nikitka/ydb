@@ -296,9 +296,9 @@ def get_comment_text(pr: PullRequest, summary: TestSummary, build_preset: str, t
             f"Please check build logs."
         ]
     elif summary.is_failed:
-        result = f":red_circle: `{{cur_date}}` some tests FAILED"
+        result = f":red_circle: `{{cur_date}}` Some tests FAILED"
     else:
-        result = f":green_circle: `{{cur_date}}` all tests PASSED"
+        result = f":green_circle: `{{cur_date}}` All tests PASSED"
 
     body = [f"{result} for commit {pr.head.sha}."]
 
