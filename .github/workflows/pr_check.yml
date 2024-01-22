@@ -38,15 +38,18 @@ jobs:
             mergeable=$(curl -s ${{ github.event.pull_request._links.self.href }} | jq -r '.mergeable')
             if [ $mergeable == "true" ]; then
               echo "mergeable == true"
-              break
+              exit 0
             elif [ $mergeable == "false" ]; then
               echo "mergeable == false"
               exit 1
             else
-              echo "no status, wait"
+              echo "no status, retrying.."
               sleep 5
             fi
           done
+          
+          echo "Unable to get mergeable flag for the PR"
+          exit 1
 #
 #  check-running-allowed:
 #    if: ${{vars.CHECKS_SWITCH != '' && fromJSON(vars.CHECKS_SWITCH).pr_check == true}}
