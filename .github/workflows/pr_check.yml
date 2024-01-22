@@ -29,6 +29,21 @@ jobs:
         with:
           name: event.json
           path: event.json
+      - shell: bash
+        run: |
+          for retry in {1..60}; do
+            mergeable=$(curl ${{ github.event.pull_request._links.self.href }} | jq -r '.mergeable')
+            if [ $mergeable == "true" ]; then
+              echo "mergeable == true"
+              break
+            elif [ $mergeable == "false" ]; then
+              echo "mergeable == false"
+              exit 1
+            else
+              echo "no status, wait"
+              sleep 5
+            fi
+          done
 #
 #  check-running-allowed:
 #    if: ${{vars.CHECKS_SWITCH != '' && fromJSON(vars.CHECKS_SWITCH).pr_check == true}}
