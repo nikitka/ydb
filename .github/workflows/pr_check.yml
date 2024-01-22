@@ -22,13 +22,13 @@ jobs:
       - name: debug
         shell: bash
         run: |
-          cat <<EOF > /event.json
+          cat <<EOF > event.json
           ${{ toJSON(github.event) }}
           EOF
       - uses: actions/upload-artifact@v4
         with:
           name: event.json
-          path: /event.json
+          path: event.json
 #
 #  check-running-allowed:
 #    if: ${{vars.CHECKS_SWITCH != '' && fromJSON(vars.CHECKS_SWITCH).pr_check == true}}
