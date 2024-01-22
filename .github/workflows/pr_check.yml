@@ -30,7 +30,10 @@ jobs:
           name: event.json
           path: event.json
       - shell: bash
+        name: check is mergeable
         run: |
+          echo "mergeable=${{ github.event.pull_request.mergeable }}"
+          
           for retry in {1..60}; do
             mergeable=$(curl -s ${{ github.event.pull_request._links.self.href }} | jq -r '.mergeable')
             if [ $mergeable == "true" ]; then
