@@ -32,7 +32,7 @@ jobs:
       - shell: bash
         run: |
           for retry in {1..60}; do
-            mergeable=$(curl ${{ github.event.pull_request._links.self.href }} | jq -r '.mergeable')
+            mergeable=$(curl -s ${{ github.event.pull_request._links.self.href }} | jq -r '.mergeable')
             if [ $mergeable == "true" ]; then
               echo "mergeable == true"
               break
