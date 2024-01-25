@@ -116,7 +116,7 @@ jobs:
     uses: ./.github/workflows/build_and_test_ya_provisioned.yml
     with:
       build_preset: ${{ matrix.build_preset }}
-      build_target: "HELLO WORLD"
+      build_target: "ydb/"
       test_size: "small,medium"
       test_type: "unittest,py3test,py2test,pytest"
       test_threads: 52
