@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import urllib.parse
+import zipfile
 from xml.etree import ElementTree as ET
 from mute_utils import mute_target, pattern_to_re
 from junit_utils import add_junit_link_property, is_faulty_testcase
@@ -53,6 +54,7 @@ class YTestReportTrace:
     def __init__(self, out_root):
         self.out_root = out_root
         self.traces = {}
+        self.logs_dir = set()
 
     def load(self, subdir):
         test_results_dir = os.path.join(self.out_root, f"{subdir}/test-results/")
@@ -76,6 +78,7 @@ class YTestReportTrace:
                         subtest = event["subtest"]
                         cls = cls.replace("::", ".")
                         self.traces[(cls, subtest)] = event
+                        self.logs_dir.add(event['logs']['logsdir'].replace("$(BUILD_ROOT)", self.out_root))
 
     def has(self, cls, name):
         return (cls, name) in self.traces
@@ -135,6 +138,26 @@ def save_log(build_root, fn, out_dir, log_url_prefix, trunc_size):
     return f"{log_url_prefix}{quoted_fpath}"
 
 
+def save_zip(out_dir, url_prefix, arc_name, dirs_to_save):
+    arc_fn = os.path.join(out_dir, arc_name)
+
+    zf = zipfile.ZipFile(arc_fn, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
+
+    n_files = 0
+    for folder in dirs_to_save:
+        log_print(f"put {folder} into {arc_name}")
+        for root, dirs, files in os.walk(folder):
+            # no empty dirs here
+            for f in files:
+                filename = os.path.join(root, f)
+                n_files += 1
+                zf.write(filename, os.path.relpath(filename, folder))
+    zf.close()
+
+    quoted_fpath = urllib.parse.quote(arc_name)
+    return f"{url_prefix}{quoted_fpath}"
+
+
 def transform(fp, mute_check: YaMuteCheck, ya_out_dir, save_inplace, log_url_prefix, log_out_dir, log_trunc_size):
     tree = ET.parse(fp)
     root = tree.getroot()
@@ -144,11 +167,14 @@ def transform(fp, mute_check: YaMuteCheck, ya_out_dir, save_inplace, log_url_pre
         traces = YTestReportTrace(ya_out_dir)
         traces.load(suite_name)
 
+        has_fail_tests = False
+
         for case in suite.findall("testcase"):
             test_name = case.get("name")
             case.set("classname", suite_name)
 
             is_fail = is_faulty_testcase(case)
+            has_fail_tests |= is_fail
 
             if mute_check(suite_name, test_name):
                 log_print("mute", suite_name, test_name)
@@ -163,6 +189,17 @@ def transform(fp, mute_check: YaMuteCheck, ya_out_dir, save_inplace, log_url_pre
                     for name, fn in logs.items():
                         url = save_log(ya_out_dir, fn, log_out_dir, log_url_prefix, log_trunc_size)
                         add_junit_link_property(case, name, url)
+
+        if has_fail_tests:
+            if not traces.logs_dir:
+                log_print(f"no logsdir for {suite_name}")
+                continue
+
+            archive_name = f'{suite_name}/testing_out_stuff.zip'
+            url = save_zip(log_out_dir, log_url_prefix, archive_name, traces.logs_dir)
+
+            for case in suite.findall("testcase"):
+                add_junit_link_property(case, 'test artifacts', url)
 
     if save_inplace:
         tree.write(fp.name)
