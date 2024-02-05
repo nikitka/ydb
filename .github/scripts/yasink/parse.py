@@ -18,24 +18,28 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    testmo_token = os.environ['TESTMO_TOKEN']
-
     tests = []
     for line in args.input:
         event = parse_line(line)
         if event is not None:
             tests.append(event)
 
+    for t in tests:
+        if t.ok:
+            continue
+        print(t)
 
-    logging.basicConfig(level=logging.DEBUG)
+    # testmo_token = os.environ['TESTMO_TOKEN']
 
-    tmo = TestmoClient('https://nebius.testmo.net', 2, testmo_token)
-    tmo_run = tmo.start_run('python', 'tst', [])
-    tmo_thread = tmo_run.new_thread()
-
-    for chunk in chunks(tests, 250):
-        tmo_thread.append_tests(chunk)
-        break
-
-    tmo_thread.complete()
-    tmo_run.complete()
+    # logging.basicConfig(level=logging.DEBUG)
+    #
+    # tmo = TestmoClient('https://nebius.testmo.net', 2, testmo_token)
+    # tmo_run = tmo.start_run('python', 'tst', [])
+    # tmo_thread = tmo_run.new_thread()
+    #
+    # for chunk in chunks(tests, 250):
+    #     tmo_thread.append_tests(chunk)
+    #     break
+    #
+    # tmo_thread.complete()
+    # tmo_run.complete()

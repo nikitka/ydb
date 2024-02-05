@@ -7,6 +7,6 @@ def parse_line(data: str):
     if data['type'] == 'test':
         if 'suite' in data or 'chunk' in data:
             return
-        return TestEvent(data['name'], data['subtest_name'], data['path'], data['status'])
+        return TestEvent.parse_ya(data)
 
     return None
