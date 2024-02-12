@@ -69,7 +69,7 @@ def parse_args():
     testmo_run.add_argument("--project", type=int, default=2, help="testmo project id")
     testmo_run.add_argument("--instance", default="https://nebius.testmo.net", help="testmo instance url")
     testmo_run.add_argument("--name", required=True, help="testmo run name")
-    testmo_run.add_argument("--src", required=True)
+    testmo_run.add_argument("--source", required=True)
     testmo_run.add_argument("--tag", action="append")
     testmo_run.add_argument(
         "--run-link",
@@ -136,7 +136,7 @@ def main():
             testmo = TestmoClient.configure(cfg)
 
             tags = [t.strip() for t in args.tag if t.strip()]
-            testmo_run = testmo.start_run(args.name, args.src, tags, args.run_field, args.run_link)
+            testmo_run = testmo.start_run(args.name, args.source, tags, args.run_field, args.run_link)
             logger.info("testmo run_id=%s: %s", testmo_run.run_id, testmo_run.url)
 
             status = {
