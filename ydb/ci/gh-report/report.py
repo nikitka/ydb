@@ -196,6 +196,7 @@ def main():
         pipeline.put(line)
 
     sink.flush(force=True)
+    sink.finish()
 
     for line in summary.render(""):
         args.badge_out_path.write(line)
