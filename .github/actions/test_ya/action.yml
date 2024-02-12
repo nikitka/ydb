@@ -219,9 +219,8 @@ runs:
         
         echo "::debug::start tests"
         
-        # --cache-tests
         ./ya test "${params[@]}" -DCONSISTENT_DEBUG --jsonl-report "$LOG_DIR/test_report.jsonl" \
-          --dist-cache-evict-bins --no-dir-outputs \
+          --dist-cache-evict-bins --no-dir-outputs --cache-tests \
           --test-node-output-limit 1000000 --drop-graph-result-before-tests \
           --output "$OUT_DIR" || (
             RC=$?
