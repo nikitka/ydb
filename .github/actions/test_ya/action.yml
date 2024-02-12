@@ -128,7 +128,7 @@ runs:
             ;;
         esac
         
-        ydb/ci/gh-report/report.py testmo create-run --instance "$TESTMO_URL" --project "${{ inputs.testman_project_id }}" \
+        /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo create-run --instance "$TESTMO_URL" --project "${{ inputs.testman_project_id }}" \
           --name "$TESTMO_RUN_NAME" --source "$TESTMO_SOURCE" --tag "$BRANCH_TAG" --tag "$EXTRA_TAG" \
           --run-link build "$RUN_URL" --run-field git-sha string "${GITHUB_SHA:0:7}" \
           --run-field git-tree url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_SHA" \
@@ -253,7 +253,7 @@ runs:
       if: inputs.testman_token
       shell: bash
       run: |
-        ydb/ci/gh-report/report.py testmo sink --status "$TESTMO_STATUS" --s3 \
+        /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo sink --status "$TESTMO_STATUS" --s3 \
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
           -m .github/config/muted_ya.txt \
           --basedir $OUT_DIR -i $LOG_DIR/test_report.jsonl
