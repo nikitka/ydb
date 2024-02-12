@@ -255,7 +255,7 @@ runs:
       run: |
         ydb/ci/gh-report/report.py testmo sink --status "$TESTMO_STATUS" --s3 \
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
-          -m /.github/config/muted_ya.txt \
+          -m .github/config/muted_ya.txt \
           --basedir $OUT_DIR -i $LOG_DIR/test_report.jsonl
 
     - name: write tests summary
