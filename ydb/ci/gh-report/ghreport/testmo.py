@@ -324,3 +324,6 @@ class TestmoSink(BaseSink):
     def submit_build(self, build: YaBuild):
         self.enqueue(serialize_build(build))
         self.flush()
+
+    def finish(self):
+        self.thread.complete()

@@ -13,6 +13,9 @@ class BaseSink:
     def flush(self, force=False):
         pass
 
+    def finish(self):
+        pass
+
 
 class ConsoleSink(BaseSink):
     def __init__(self):
