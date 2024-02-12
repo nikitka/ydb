@@ -5,6 +5,7 @@ import logging.config
 import os
 import pathlib
 import json
+import sys
 
 from ghreport.config import Config
 from ghreport.mute import YaMuteCheck
@@ -12,6 +13,7 @@ from ghreport.pipeline import ParserPipeline
 from ghreport.s3 import get_s3_client
 from ghreport.sink import ConsoleSink
 from ghreport.testmo import TestmoClient, TestmoField, TestmoLink, TestmoRun, TestmoSink
+from ghreport.summary import SummarySink
 
 
 def prepare_logger():
@@ -51,8 +53,11 @@ def parse_args():
         cmd_parser.add_argument("--basedir", type=pathlib.Path, help="ya make output directory", required=True)
         cmd_parser.add_argument("--github-repo", help="github repository name", required=True)
         cmd_parser.add_argument("--github-sha", help="github sha", required=True)
-        cmd_parser.add_argument("-m", help="mute_check test list")
+        cmd_parser.add_argument("-m", "--mute-conf", help="mute_check test list")
         cmd_parser.add_argument("-i", "--input", type=argparse.FileType("r"))
+        cmd_parser.add_argument("--summary-out-path")
+        cmd_parser.add_argument("--summary-url-prefix")
+        cmd_parser.add_argument("--badge-out-path", type=argparse.FileType("w"), default=sys.stdout)
 
     parser = argparse.ArgumentParser()
 
@@ -176,18 +181,25 @@ def main():
 
     mute_check = YaMuteCheck()
 
-    if args.m:
-        mute_check.load(args.m)
+    if args.mute_conf:
+        mute_check.load(args.mute_conf)
     else:
         logger.info("no mute rules")
 
     cfg.github(args.github_repo, args.github_sha)
     cfg.basedir = args.basedir
-    pipeline = ParserPipeline(cfg, mute_check, s3_client, sink)
+
+    summary = SummarySink(cfg)
+    pipeline = ParserPipeline(cfg, mute_check, s3_client, [sink, summary])
 
     for line in args.input:
         pipeline.put(line)
+
     sink.flush(force=True)
+
+    for line in summary.render(""):
+        args.badge_out_path.write(line)
+        args.badge_out_path.write('\n')
 
 
 if __name__ == "__main__":

@@ -68,6 +68,7 @@ runs:
         echo "TESTMO_URL=${{ inputs.testman_url }}" >> $GITHUB_ENV
         echo "TESTMO_STATUS=$(mktemp)"  >> $GITHUB_ENV
         echo "SUMMARY_LINKS=$(mktemp)" >> $GITHUB_ENV
+        echo "BADGE_OUT_PATH=$(mktemp)" >> $GITHUB_ENV
         echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
         echo "BUILD_PRESET=${{ inputs.build_preset }}" >> $GITHUB_ENV
     
@@ -255,8 +256,13 @@ runs:
       run: |
         /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo sink --status "$TESTMO_STATUS" --s3 \
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
-          -m .github/config/muted_ya.txt \
-          --basedir $OUT_DIR -i $LOG_DIR/test_report.jsonl
+          --mute-conf .github/config/muted_ya.txt \
+          --summary-out-path "$ARTIFACTS_DIR/summary/" --summary-url-prefix $S3_URL_PREFIX/summary/ \
+          --badge-out-path "$BADGE_PATH" \
+          --basedir "$OUT_DIR" --input $LOG_DIR/test_report.jsonl
+        
+        cat "$BADGE_PATH" | .github/scripts/tests/comment-pr.py
+
 
     - name: write tests summary
       shell: bash
@@ -265,6 +271,22 @@ runs:
         mkdir $ARTIFACTS_DIR/summary/
         
         cat $SUMMARY_LINKS | python3 -c 'import sys; print(" | ".join([v for _, v in sorted([l.strip().split(" ", 1) for l in sys.stdin], key=lambda a: (int(a[0]), a))]))' >> $GITHUB_STEP_SUMMARY
+        cat "$BADGE_PATH" >> $GITHUB_STEP_SUMMARY
+        
+#        .github/scripts/tests/generate-summary.py \
+#          --summary-out-path $ARTIFACTS_DIR/summary/ \
+#          --summary-url-prefix $S3_URL_PREFIX/summary/ \
+#          --test-history-url $TEST_HISTORY_URL \
+#          --build-preset "$BUILD_PRESET" \
+#          "Tests" ya-test.html "$JUNIT_REPORT_XML"
+
+#    - name: sync test results to s3
+#      if: always()
+#      shell: bash
+#      run: |
+#        echo "::group::s3-sync"
+#        s3cmd sync -r --follow-symlinks --acl-public --no-progress --stats --no-check-md5 "$ARTIFACTS_DIR/" "$S3_BUCKET_PATH/"
+#        echo "::endgroup::"
     
     - name: sync logs results to s3
       if: always()

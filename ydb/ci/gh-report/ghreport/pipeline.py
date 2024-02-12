@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Optional
+from typing import List, Optional
 
 import orjson
 
@@ -51,13 +51,13 @@ def check_directory(fn):
 
 
 class ParserPipeline:
-    def __init__(self, cfg: Config, mute_check: YaMuteCheck, s3_client, sink: BaseSink):
+    def __init__(self, cfg: Config, mute_check: YaMuteCheck, s3_client, sinks: List[BaseSink]):
         self.current_suite = None  # type: Optional[YaTestSuite]
         self.current_chunk = None  # type: Optional[YaTestChunk]
         self.cfg = cfg
         self.s3 = s3_client
         self.mute_check = mute_check
-        self.sink = sink
+        self.sinks = sinks
 
     def put(self, data: str):
         data = orjson.loads(data)
@@ -231,8 +231,10 @@ class ParserPipeline:
         )
 
     def submit_build(self, build: YaBuild):
-        self.sink.submit_build(build)
+        for sink in self.sinks:
+            sink.submit_build(build)
 
     def submit_suite(self, suite: YaTestSuite):
         logger.info("submit %s", suite)
-        self.sink.submit_suite(suite)
+        for sink in self.sinks:
+            sink.submit_suite(suite)
