@@ -43,9 +43,9 @@ class SummarySink(BaseSink):
                     status = SummaryStatus.MUTED
                 else:
                     if test.error_type == YaErrorType.REGULAR:
-                        status = SummaryStatus.FAILED
-                    else:
                         status = SummaryStatus.ERRORS
+                    else:
+                        status = SummaryStatus.FAILED
             else:
                 if test.status == YaStatus.OK:
                     status = SummaryStatus.PASSED

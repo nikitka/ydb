@@ -218,9 +218,10 @@ runs:
         echo "Tests are running..." | .github/scripts/tests/comment-pr.py
         
         echo "::debug::start tests"
-
+        
+        # --cache-tests
         ./ya test "${params[@]}" -DCONSISTENT_DEBUG --jsonl-report "$LOG_DIR/test_report.jsonl" \
-          --dist-cache-evict-bins --cache-tests --no-dir-outputs \
+          --dist-cache-evict-bins --no-dir-outputs \
           --test-node-output-limit 1000000 --drop-graph-result-before-tests \
           --output "$OUT_DIR" || (
             RC=$?
@@ -258,10 +259,10 @@ runs:
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
           --mute-conf .github/config/muted_ya.txt \
           --summary-out-path "$ARTIFACTS_DIR/summary/" --summary-url-prefix $S3_URL_PREFIX/summary/ \
-          --badge-out-path "$BADGE_PATH" \
+          --badge-out-path "$BADGE_OUT_PATH" \
           --basedir "$OUT_DIR" --input $LOG_DIR/test_report.jsonl
         
-        cat "$BADGE_PATH" | .github/scripts/tests/comment-pr.py
+        cat "$BADGE_OUT_PATH" | .github/scripts/tests/comment-pr.py
 
 
     - name: write tests summary
@@ -271,7 +272,8 @@ runs:
         mkdir $ARTIFACTS_DIR/summary/
         
         cat $SUMMARY_LINKS | python3 -c 'import sys; print(" | ".join([v for _, v in sorted([l.strip().split(" ", 1) for l in sys.stdin], key=lambda a: (int(a[0]), a))]))' >> $GITHUB_STEP_SUMMARY
-        cat "$BADGE_PATH" >> $GITHUB_STEP_SUMMARY
+
+        cat "$BADGE_OUT_PATH" >> $GITHUB_STEP_SUMMARY
         
 #        .github/scripts/tests/generate-summary.py \
 #          --summary-out-path $ARTIFACTS_DIR/summary/ \
