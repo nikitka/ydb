@@ -66,7 +66,7 @@ runs:
         echo "JUNIT_REPORT_PARTS=$TMP_DIR/junit-split" >> $GITHUB_ENV
         echo "TESTMO_TOKEN=${{ inputs.testman_token }}" >> $GITHUB_ENV
         echo "TESTMO_URL=${{ inputs.testman_url }}" >> $GITHUB_ENV
-        echo "TESTMO_STATUS=$(mktemp)"  >> $GITHUB_ENV
+        echo "TESTMO_STATE_FILE=$(mktemp)"  >> $GITHUB_ENV
         echo "SUMMARY_LINKS=$(mktemp)" >> $GITHUB_ENV
         echo "BADGE_OUT_PATH=$(mktemp)" >> $GITHUB_ENV
         echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
@@ -133,9 +133,9 @@ runs:
           --name "$TESTMO_RUN_NAME" --source "$TESTMO_SOURCE" --tag "$BRANCH_TAG" --tag "$EXTRA_TAG" \
           --run-link build "$RUN_URL" --run-field git-sha string "${GITHUB_SHA:0:7}" \
           --run-field git-tree url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_SHA" \
-          --status "$TESTMO_STATUS"
+          --state "$TESTMO_STATE_FILE"
         
-        echo "TEST_HISTORY_URL=$(jq -r '.run_url' $TESTMO_STATUS)" >> $GITHUB_ENV
+        echo "TEST_HISTORY_URL=$(jq -r '.run_url' $TESTMO_STATE_FILE)" >> $GITHUB_ENV
         
 
     - name: Print test history link
@@ -254,7 +254,7 @@ runs:
       if: inputs.testman_token
       shell: bash
       run: |
-        /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo sink --status "$TESTMO_STATUS" --s3 \
+        /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo sink --state "$TESTMO_STATE_FILE" --s3 \
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
           --mute-conf .github/config/muted_ya.txt \
           --summary-out-path "$ARTIFACTS_DIR/summary/" --summary-url-prefix $S3_URL_PREFIX/summary/ \
@@ -262,7 +262,7 @@ runs:
           --basedir "$OUT_DIR" --input $LOG_DIR/test_report.jsonl
         
         cat "$BADGE_OUT_PATH" | .github/scripts/tests/comment-pr.py
-
+        /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo complete-run --state "$TESTMO_STATE_FILE"
 
     - name: write tests summary
       shell: bash

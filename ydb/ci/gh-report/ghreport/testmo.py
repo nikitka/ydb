@@ -3,6 +3,7 @@ import base64
 import dataclasses
 import hashlib
 import html
+import json
 import logging
 from typing import Dict, List, Literal, Optional
 
@@ -61,8 +62,8 @@ def serialize_build(build: YaBuild):
 def serialize_test(test: YaTest, key=None):
     if key is None:
         # FIXME: what about style and build tests ?
-        key = hashlib.md5(
-            f"{test.path}{test.name}{test.subtest_name}".encode("utf8")
+        key = hashlib.sha256(
+            f"{test.path}.{test.name}.{test.subtest_name}".encode("utf8")
         ).hexdigest()
 
     if test.failed and test.muted:
@@ -327,3 +328,21 @@ class TestmoSink(BaseSink):
 
     def finish(self):
         self.thread.complete()
+
+
+@dataclasses.dataclass
+class TestmoState:
+    instance: str = None
+    project: int = None
+    run_id: int = None
+    run_url: str = None
+
+    def save(self, fn):
+        with open(fn, 'wt') as fp:
+            json.dump(dataclasses.asdict(self), fp)
+
+    @classmethod
+    def load(cls, fn):
+        with open(fn, 'rt') as fp:
+            state = json.load(fp)
+        return cls(**state)

@@ -12,7 +12,7 @@ from ghreport.mute import YaMuteCheck
 from ghreport.pipeline import ParserPipeline
 from ghreport.s3 import get_s3_client
 from ghreport.sink import ConsoleSink
-from ghreport.testmo import TestmoClient, TestmoField, TestmoLink, TestmoRun, TestmoSink
+from ghreport.testmo import TestmoClient, TestmoField, TestmoLink, TestmoRun, TestmoSink, TestmoState
 from ghreport.summary import SummarySink
 
 
@@ -91,12 +91,15 @@ def parse_args():
         action=TestmoField.argparse_action(),
     )
     testmo_run.add_argument(
-        "--status", metavar="FILENAME", help="status file with ids and links (must be passed to the sink step)"
+        "--state",
+        dest="testmo_state",
+        metavar="FILENAME",
+        help="state file with ids and links (must be passed to the sink step)",
     )
 
     testmo_sink = testmo_sp.add_parser("sink")
     base_sink_args(testmo_sink)
-    testmo_sink.add_argument("--status", metavar="FILENAME", help="status file with ids and links")
+    testmo_sink.add_argument("--state", dest="testmo_state", metavar="FILENAME", help="state file with ids and links")
     testmo_sink.add_argument("--s3", dest="enable_s3", action="store_true", help="enable s3 log upload")
     testmo_sink.add_argument(
         "--thread-link",
@@ -112,6 +115,8 @@ def parse_args():
         help="testmo thread fields",
         action=TestmoField.argparse_action(),
     )
+    testmo_finish = testmo_sp.add_parser("complete-run")
+    testmo_finish.add_argument("--state", dest="testmo_state", metavar="FILENAME", help="state file with ids and links")
 
     return parser.parse_args()
 
@@ -136,7 +141,7 @@ def main():
         s3_client = get_s3_client(cfg)
 
     if args.command == "testmo":
-        if args.testmo_cmd == 'create-run':
+        if args.testmo_cmd == "create-run":
             cfg.testmo(os.environ["TESTMO_TOKEN"], args.instance, args.project)
             testmo = TestmoClient.configure(cfg)
 
@@ -144,26 +149,26 @@ def main():
             testmo_run = testmo.start_run(args.name, args.source, tags, args.run_field, args.run_link)
             logger.info("testmo run_id=%s: %s", testmo_run.run_id, testmo_run.url)
 
-            status = {
-                "instance": args.instance,
-                "project": args.project,
-                "run_id": testmo_run.run_id,
-                "run_url": testmo_run.url,
-            }
-
-            with open(args.status, "wt") as fp:
-                json.dump(status, fp)
+            TestmoState(instance=args.instance, project=args.project,
+                        run_id=testmo_run.run_id, run_url=testmo_run.url).save(args.testmo_state)
 
             return
+        elif args.testmo_cmd == "complete-run":
+            state = TestmoState.load(args.testmo_state)
+            cfg.testmo(os.environ["TESTMO_TOKEN"], state.instance, state.project)
 
-        elif args.testmo_cmd == 'sink':
-            with open(args.status, "rt") as fp:
-                status = json.load(fp)
-
-            cfg.testmo(os.environ["TESTMO_TOKEN"], status['instance'], status['project'])
             testmo = TestmoClient.configure(cfg)
 
-            testmo_run = TestmoRun(testmo, status['run_id'])
+            testmo_run = TestmoRun(testmo, state.run_id)
+            testmo_run.complete()
+
+            return
+        elif args.testmo_cmd == "sink":
+            state = TestmoState.load(args.testmo_state)
+            cfg.testmo(os.environ["TESTMO_TOKEN"], state.instance, state.project)
+            testmo = TestmoClient.configure(cfg)
+
+            testmo_run = TestmoRun(testmo, state.run_id)
 
             testmo_thread = testmo_run.new_thread(args.thread_field, args.thread_link)
             logger.info("testmo run_id=%s, thread_id=%s", testmo_run.run_id, testmo_thread.thread_id)
@@ -200,7 +205,7 @@ def main():
 
     for line in summary.render(""):
         args.badge_out_path.write(line)
-        args.badge_out_path.write('\n')
+        args.badge_out_path.write("\n")
 
 
 if __name__ == "__main__":
