@@ -220,6 +220,7 @@ runs:
         echo "::debug::start tests"
         
         ./ya test "${params[@]}" -DCONSISTENT_DEBUG --jsonl-report "$LOG_DIR/test_report.jsonl" \
+          --log-file "$LOG_DIR/ya_log_test.txt" --evlog-file "$LOG_DIR/ya_evlog_test.jsonl" \
           --dist-cache-evict-bins --no-dir-outputs --cache-tests \
           --test-node-output-limit 1000000 --drop-graph-result-before-tests \
           --output "$OUT_DIR" || (
