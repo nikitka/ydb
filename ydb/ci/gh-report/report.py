@@ -55,8 +55,8 @@ def parse_args():
         cmd_parser.add_argument("--github-sha", help="github sha", required=True)
         cmd_parser.add_argument("-m", "--mute-conf", help="mute_check test list")
         cmd_parser.add_argument("-i", "--input", type=argparse.FileType("r"))
-        cmd_parser.add_argument("--summary-out-path")
-        cmd_parser.add_argument("--summary-url-prefix")
+        cmd_parser.add_argument("--report-out-path", required=True)
+        cmd_parser.add_argument("--report-url-prefix", required=True)
         cmd_parser.add_argument("--badge-out-path", type=argparse.FileType("w"), default=sys.stdout)
 
     parser = argparse.ArgumentParser()
@@ -203,9 +203,13 @@ def main():
     sink.flush(force=True)
     sink.finish()
 
-    for line in summary.render(""):
+    report_url = summary.generate_report(args.report_out_path, args.report_out_prefix)
+
+    for line in summary.render_badge(report_url):
         args.badge_out_path.write(line)
         args.badge_out_path.write("\n")
+
+
 
 
 if __name__ == "__main__":

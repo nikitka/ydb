@@ -1,7 +1,11 @@
+import os
 import enum
 from .config import Config
 from .sink import BaseSink
 from .base import YaTestSuite, YaStatus, YaErrorType
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "templates")
 
 
 def render_pm(value, url, diff=None):
@@ -24,11 +28,11 @@ def render_pm(value, url, diff=None):
 
 
 class SummaryStatus(enum.Enum):
-    PASSED = enum.auto()
-    FAILED = enum.auto()
-    ERRORS = enum.auto()
-    SKIPPED = enum.auto()
-    MUTED = enum.auto()
+    PASS = enum.auto()
+    FAIL = enum.auto()
+    ERROR = enum.auto()
+    SKIP = enum.auto()
+    MUTE = enum.auto()
 
 
 class SummarySink(BaseSink):
@@ -40,17 +44,17 @@ class SummarySink(BaseSink):
         for test in suite.iter_tests():
             if test.failed:
                 if test.muted:
-                    status = SummaryStatus.MUTED
+                    status = SummaryStatus.MUTE
                 else:
                     if test.error_type == YaErrorType.REGULAR:
-                        status = SummaryStatus.ERRORS
+                        status = SummaryStatus.ERROR
                     else:
-                        status = SummaryStatus.FAILED
+                        status = SummaryStatus.FAIL
             else:
                 if test.status == YaStatus.OK:
-                    status = SummaryStatus.PASSED
-                elif test.status in (YaStatus.SKIPPED, YaStatus.NOT_LAUNCHED):
-                    status = SummaryStatus.SKIPPED
+                    status = SummaryStatus.PASS
+                elif test.status in (YaStatus.SKIP, YaStatus.NOT_LAUNCHED):
+                    status = SummaryStatus.SKIP
                 else:
                     raise Exception("Unknown summary status for tests %s" % test)
 
@@ -59,10 +63,33 @@ class SummarySink(BaseSink):
     def render_line(self, items):
         return f"| {' | '.join(items)} |"
 
-    def generate_report(self):
-        pass
+    def generate_report(self, path, prefix):
+        env = Environment(loader=FileSystemLoader(TEMPLATES_PATH), undefined=StrictUndefined)
 
-    def render(self, report_url: str, add_footnote=False):
+        status_test = {}
+        has_any_log = set()
+
+        for t in rows:
+            status_test.setdefault(t.status, []).append(t)
+            if any(t.log_urls.values()):
+                has_any_log.add(t.status)
+
+        for status in status_test.keys():
+            status_test[status].sort(key=attrgetter("full_name"))
+
+        status_order = [SummaryStatus.ERROR, SummaryStatus.FAIL, SummaryStatus.SKIP, SummaryStatus.MUTE, SummaryStatus.PASS]
+
+        # remove status group without tests
+        status_order = [s for s in status_order if s in status_test]
+
+        content = env.get_template("summary.html").render(
+            status_order=status_order, tests=status_test, has_any_log=has_any_log
+        )
+
+        with open(path, "w") as fp:
+            fp.write(content)
+
+    def render_badge(self, report_url: str, add_footnote=False):
         footnote_url = f"{self.cfg.gh_repo}/tree/main/.github/config/muted_ya.txt"
         footnote = "[^1]" if add_footnote else f'<sup>[?]({footnote_url} "All mute rules are defined here")</sup>'
 
@@ -79,11 +106,11 @@ class SummarySink(BaseSink):
 
         row.extend([
             render_pm(sum(self.counter.values()), f"{report_url}", 0),
-            render_pm(self.counter[SummaryStatus.PASSED], f"{report_url}#PASS", 0),
-            render_pm(self.counter[SummaryStatus.ERRORS], f"{report_url}#ERROR", 0),
-            render_pm(self.counter[SummaryStatus.FAILED], f"{report_url}#FAIL", 0),
-            render_pm(self.counter[SummaryStatus.SKIPPED], f"{report_url}#SKIP", 0),
-            render_pm(self.counter[SummaryStatus.MUTED], f"{report_url}#MUTE", 0),
+            render_pm(self.counter[SummaryStatus.PASS], f"{report_url}#PASS", 0),
+            render_pm(self.counter[SummaryStatus.ERROR], f"{report_url}#ERROR", 0),
+            render_pm(self.counter[SummaryStatus.FAIL], f"{report_url}#FAIL", 0),
+            render_pm(self.counter[SummaryStatus.SKIP], f"{report_url}#SKIP", 0),
+            render_pm(self.counter[SummaryStatus.MUTE], f"{report_url}#MUTE", 0),
         ])
         result.append(self.render_line(row))
 
