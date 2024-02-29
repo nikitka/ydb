@@ -173,7 +173,7 @@ class SummarySink(BaseSink):
                 s3_client.upload_fileobj(
                     zfp,
                     self.cfg.s3_bucket,
-                    self.cfg.s3_bucket.join(f"{folder}/{report_type}.html"),
+                    str(self.cfg.s3_path.joinpath(f"{folder}/{report_type}.html")),
                     ExtraArgs=extra_args,
                 )
         return urls
