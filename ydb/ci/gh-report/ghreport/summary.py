@@ -84,9 +84,14 @@ class SummarySink(BaseSink):
             if report_url:
                 return f"{report_url}{suffix}"
 
+        total_tests = sum(map(len, tests.values()))
+
+        if not total_tests:
+            return
+
         line = [
             title,
-            render_pm(sum(map(len, tests.values())), mk_url()),
+            render_pm(total_tests, mk_url()),
             render_pm(len(tests[SummaryStatus.PASS]), mk_url("#PASS")),
             render_pm(len(tests[SummaryStatus.ERROR]), mk_url("#ERROR")),
             render_pm(len(tests[SummaryStatus.FAIL]), mk_url("#FAIL")),
@@ -101,13 +106,19 @@ class SummarySink(BaseSink):
 
         columns = ["", "TESTS", "PASSED", "ERRORS", "FAILED", "SKIPPED", f"MUTED{footnote}"]
 
-        result = [
+        headers = [
             self.render_line(columns),
             self.render_line(["---:"] * len(columns)),
-            # self.render_counters("Build", self.builds, report_urls.get('build')),
+        ]
+
+        result = [
             self.render_counters("Style", self.styles, report_urls.get("styles")),
             self.render_counters("Test", self.tests, report_urls.get("tests")),
         ]
+        if not any(result):
+            return []
+
+        result = headers + [r for r in result if r is not None]
 
         if add_footnote:
             result.append("")
