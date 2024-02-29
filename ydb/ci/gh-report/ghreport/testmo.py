@@ -11,7 +11,7 @@ import requests
 from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
                       wait_exponential)
 
-from .base import YaBuild, YaStatus, YaTest, YaTestSuite
+from .base import YaLogItem, YaStatus, YaTest, YaTestSuite, YaTestType
 from .config import Config
 from .sink import BaseSink
 from .utils import chunks
@@ -33,35 +33,34 @@ status_map = {
 logger = logging.getLogger(__name__)
 
 
-def serialize_build(build: YaBuild):
-    key = hashlib.md5(f"build-{build.path}".encode("utf8")).hexdigest()
-
-    if build.failed and build.muted:
-        # FIXME: change to mute
-        status = "skipped"
-    else:
-        # FIXME: add other statuses support
-        status = status_map[build.status]
-
-    output = f'<pre class="code-block">{html.escape(build.rich_snippet)}</pre>'
-
-    fields = [{"type": FIELD_HTML, "name": "Output", "value": output.strip()}]
-
-    name = "BUILD"
-
-    return {
-        "key": key,
-        "status": status,
-        "folder": build.path,
-        "name": name,
-        "fields": fields,
-        "elapsed": 0,
-    }
+# def serialize_build(build: YaLogItem):
+#     key = hashlib.md5(f"build-{build.path}".encode("utf8")).hexdigest()
+#
+#     if build.failed and build.muted:
+#         # FIXME: change to mute
+#         status = "skipped"
+#     else:
+#         # FIXME: add other statuses support
+#         status = status_map[build.status]
+#
+#     output = f'<pre class="code-block">{html.escape(build.rich_snippet)}</pre>'
+#
+#     fields = [{"type": FIELD_HTML, "name": "Output", "value": output.strip()}]
+#
+#     name = "BUILD"
+#
+#     return {
+#         "key": key,
+#         "status": status,
+#         "folder": build.path,
+#         "name": name,
+#         "fields": fields,
+#         "elapsed": 0,
+#     }
 
 
 def serialize_test(test: YaTest, key=None):
     if key is None:
-        # FIXME: what about style and build tests ?
         key = hashlib.sha256(
             f"{test.path}.{test.name}.{test.subtest_name}".encode("utf8")
         ).hexdigest()
@@ -302,32 +301,62 @@ class TestmoClient:
         return TestmoRun(self, response["id"])
 
 
-class TestmoSink(BaseSink):
-    def __init__(self, thread: TestmoThread):
-        self.thread = thread
+class TestmoRoute:
+    def __init__(self, run: TestmoRun, new_thread_kwargs=None):
         self.queue = []
+        self.run = run
+        self.thread = None
+        self.new_thread_kwargs = new_thread_kwargs or {}
+
+    def enqueue(self, data: Dict[any, any]):
+        self.queue.append(data)
+
+    def get_new_thread(self):
+        return self.run.new_thread(**self.new_thread_kwargs)
 
     def flush(self, force=False):
+        if not self.queue:
+            return
+
         if force or len(self.queue) >= 250:
+            if not self.thread:
+                self.thread = self.get_new_thread()
+                logger.info("started new thread %s", self.thread.url)
+
             for chunk in chunks(self.queue, 250):
                 logger.info("testmo: send %s tests", len(chunk))
                 self.thread.append(chunk)
             self.queue = []
 
-    def enqueue(self, data: Dict[any, any]):
-        self.queue.append(data)
+    def complete(self):
+        self.flush(force=True)
+
+        if self.thread:
+            self.thread.complete()
+
+
+class TestmoSink(BaseSink):
+    def __init__(self, run: TestmoRun, new_therad_kwargs):
+        self.tests = TestmoRoute(run, new_therad_kwargs)
+        self.style = TestmoRoute(run, new_therad_kwargs)
+        self.build = TestmoRoute(run, new_therad_kwargs)
+
+    def submit_build(self, build: YaLogItem):
+        pass
+        # self.build.enqueue(serialize_build(build))
+        # self.build.flush()
 
     def submit_suite(self, suite: YaTestSuite):
-        for test in suite.iter_tests():
-            self.enqueue(serialize_test(test))
-        self.flush()
+        queue = {YaTestType.STYLE: self.style, YaTestType.TEST: self.tests}[suite.type]
 
-    def submit_build(self, build: YaBuild):
-        self.enqueue(serialize_build(build))
-        self.flush()
+        for test in suite.iter_tests():
+            queue.enqueue(serialize_test(test))
+        queue.flush()
 
     def finish(self):
-        self.thread.complete()
+        self.tests.complete()
+        self.style.complete()
+        self.build.complete()
 
 
 @dataclasses.dataclass

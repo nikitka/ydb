@@ -5,8 +5,8 @@ from typing import List, Optional
 
 import orjson
 
-from .base import (UploadedFile, YaBuild, YaStatus, YaTest, YaTestChunk,
-                   YaTestSuite)
+from .base import (UploadedFile, YaLogItem, YaStatus, YaTest, YaTestChunk,
+                   YaTestSuite, YaTestType)
 from .config import Config
 from .mute import YaMuteCheck
 from .sink import BaseSink
@@ -62,15 +62,14 @@ class ParserPipeline:
     def put(self, data: str):
         data = orjson.loads(data)
 
-        if data["type"] != "test":
+        # if data["type"] == "build":
+        #     build = YaLogItem.parse_json(data)
+        #     self.on_build_finished(build)
+
+        if data["type"] not in ("style", "test"):
             self.on_suite_finished()
 
-        if data["type"] == "build":
-            if data["status"] != "OK":
-                build = YaBuild.parse_json(data)
-                self.on_build_finished(build)
-
-        if data["type"] != "test" or data.get("status") == "DISCOVERED":
+        if data.get("status") == "DISCOVERED" or data["type"] not in ("style", "test"):
             return
 
         if data.get("suite"):
@@ -95,7 +94,16 @@ class ParserPipeline:
 
             self.current_chunk.add_test(test)
 
-    def on_build_finished(self, build: YaBuild):
+    def finish(self):
+        self.on_suite_finished()
+
+    def on_style_finished(self, style: YaLogItem):
+        if style.status != YaStatus.OK and self.mute_check(style.path, "BUILD"):
+            style.mute()
+
+        self.submit_style(style)
+
+    def on_build_finished(self, build: YaLogItem):
         if build.status != YaStatus.OK and self.mute_check(build.path, "BUILD"):
             build.mute()
 
@@ -230,7 +238,7 @@ class ParserPipeline:
             size=os.stat(fn).st_size,
         )
 
-    def submit_build(self, build: YaBuild):
+    def submit_build(self, build: YaLogItem):
         for sink in self.sinks:
             sink.submit_build(build)
 

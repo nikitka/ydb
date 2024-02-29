@@ -4,8 +4,8 @@ import logging
 import logging.config
 import os
 import pathlib
-import json
 import sys
+import shutil
 
 from ghreport.config import Config
 from ghreport.mute import YaMuteCheck
@@ -55,9 +55,15 @@ def parse_args():
         cmd_parser.add_argument("--github-sha", help="github sha", required=True)
         cmd_parser.add_argument("-m", "--mute-conf", help="mute_check test list")
         cmd_parser.add_argument("-i", "--input", type=argparse.FileType("r"))
-        cmd_parser.add_argument("--report-out-path", required=True)
-        cmd_parser.add_argument("--report-url-prefix", required=True)
         cmd_parser.add_argument("--badge-out-path", type=argparse.FileType("w"), default=sys.stdout)
+
+    def add_testmo_state_arg(parser):
+        parser.add_argument(
+            "--state",
+            dest="testmo_state",
+            metavar="FILENAME",
+            help="state file with ids and links (must be passed to the sink step)",
+        )
 
     parser = argparse.ArgumentParser()
 
@@ -65,12 +71,15 @@ def parse_args():
 
     console_sink = subparsers.add_parser("console")
     base_sink_args(console_sink)
+    console_sink.add_argument("--report-out-folder")
+    console_sink.add_argument("--report-url-prefix")
 
     testmo_cmd = subparsers.add_parser("testmo")
 
     testmo_sp = testmo_cmd.add_subparsers(dest="testmo_cmd")
 
     testmo_run = testmo_sp.add_parser("create-run")
+    add_testmo_state_arg(testmo_run)
     testmo_run.add_argument("--project", type=int, default=2, help="testmo project id")
     testmo_run.add_argument("--instance", default="https://nebius.testmo.net", help="testmo instance url")
     testmo_run.add_argument("--name", required=True, help="testmo run name")
@@ -90,33 +99,14 @@ def parse_args():
         help="testmo run fields",
         action=TestmoField.argparse_action(),
     )
-    testmo_run.add_argument(
-        "--state",
-        dest="testmo_state",
-        metavar="FILENAME",
-        help="state file with ids and links (must be passed to the sink step)",
-    )
 
     testmo_sink = testmo_sp.add_parser("sink")
     base_sink_args(testmo_sink)
-    testmo_sink.add_argument("--state", dest="testmo_state", metavar="FILENAME", help="state file with ids and links")
+    add_testmo_state_arg(testmo_sink)
     testmo_sink.add_argument("--s3", dest="enable_s3", action="store_true", help="enable s3 log upload")
-    testmo_sink.add_argument(
-        "--thread-link",
-        nargs="*",
-        metavar="NAME URL NOTE?",
-        help="testmo thread links",
-        action=TestmoLink.argparse_action(),
-    )
-    testmo_sink.add_argument(
-        "--thread-field",
-        nargs="*",
-        metavar="NAME TYPE VALUE",
-        help="testmo thread fields",
-        action=TestmoField.argparse_action(),
-    )
+
     testmo_finish = testmo_sp.add_parser("complete-run")
-    testmo_finish.add_argument("--state", dest="testmo_state", metavar="FILENAME", help="state file with ids and links")
+    add_testmo_state_arg(testmo_finish)
 
     return parser.parse_args()
 
@@ -170,12 +160,13 @@ def main():
 
             testmo_run = TestmoRun(testmo, state.run_id)
 
-            testmo_thread = testmo_run.new_thread(args.thread_field, args.thread_link)
-            logger.info("testmo run_id=%s, thread_id=%s", testmo_run.run_id, testmo_thread.thread_id)
+            # testmo_thread = testmo_run.new_thread(args.thread_field, args.thread_link)
+            # logger.info("testmo run_id=%s, thread_id=%s", testmo_run.run_id, testmo_thread.thread_id)
             logger.info("testmo run: %s", testmo_run.url)
-            logger.info("testmo thread: %s", testmo_thread.url)
+            # logger.info("testmo thread: %s", testmo_thread.url)
 
-            sink = TestmoSink(testmo_thread)
+            # new_therad_kwargs={'fields': args.thread_field, 'links': args.thread_link}
+            sink = TestmoSink(testmo_run, {})
         else:
             raise Exception("Invalid testmo sub command")
 
@@ -200,16 +191,24 @@ def main():
     for line in args.input:
         pipeline.put(line)
 
+    pipeline.finish()
+
     sink.flush(force=True)
     sink.finish()
 
-    report_url = summary.generate_report(args.report_out_path, args.report_out_prefix)
+    reports = summary.generate_reports()
+    report_urls = {}
 
-    for line in summary.render_badge(report_url):
-        args.badge_out_path.write(line)
-        args.badge_out_path.write("\n")
+    if s3_client:
+        report_urls = summary.upload_to_s3(s3_client, reports)
+    elif args.report_out_folder:
+        report_urls = summary.save_reports(reports, args.report_out_folder, args.report_url_prefix)
 
+    if args.badge_out_path:
+        badge = summary.render_badge(report_urls)
 
+        for line in badge:
+            args.badge_out_path.write(f"{line}\n")
 
 
 if __name__ == "__main__":

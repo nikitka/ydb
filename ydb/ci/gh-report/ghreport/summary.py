@@ -1,15 +1,20 @@
 import os
 import enum
+from io import BytesIO
+import shutil
+from pathlib import Path
+from typing import Dict
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from .config import Config
 from .sink import BaseSink
-from .base import YaTestSuite, YaStatus, YaErrorType
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from .base import YaTestSuite, YaStatus, YaErrorType, YaTestType
+from .utils import GzipCompressionWrapper
 
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "templates")
 
 
-def render_pm(value, url, diff=None):
-    if value:
+def render_pm(value, url=None, diff=None):
+    if value and url:
         text = f"[{value}]({url})"
     else:
         text = str(value)
@@ -37,10 +42,21 @@ class SummaryStatus(enum.Enum):
 
 class SummarySink(BaseSink):
     def __init__(self, cfg: Config):
-        self.counter = {s: 0 for s in SummaryStatus}
+        self.builds = {s: [] for s in SummaryStatus}
+        self.tests = {s: [] for s in SummaryStatus}
+        self.styles = {s: [] for s in SummaryStatus}
         self.cfg = cfg
 
+    # def submit_build(self, build):
+    #     status = SummaryStatus.ERROR if build.failed else SummaryStatus.PASS
+    #     self.builds[status].append(build)
+
     def submit_suite(self, suite: YaTestSuite):
+        if suite.type == YaTestType.STYLE:
+            counter = self.styles
+        else:
+            counter = self.tests
+
         for test in suite.iter_tests():
             if test.failed:
                 if test.muted:
@@ -53,69 +69,105 @@ class SummarySink(BaseSink):
             else:
                 if test.status == YaStatus.OK:
                     status = SummaryStatus.PASS
-                elif test.status in (YaStatus.SKIP, YaStatus.NOT_LAUNCHED):
+                elif test.status in (YaStatus.SKIPPED, YaStatus.NOT_LAUNCHED):
                     status = SummaryStatus.SKIP
                 else:
                     raise Exception("Unknown summary status for tests %s" % test)
 
-            self.counter[status] += 1
+            counter[status].append(test)
 
     def render_line(self, items):
         return f"| {' | '.join(items)} |"
 
-    def generate_report(self, path, prefix):
-        env = Environment(loader=FileSystemLoader(TEMPLATES_PATH), undefined=StrictUndefined)
+    def render_counters(self, title, tests, report_url=None):
+        def mk_url(suffix=""):
+            if report_url:
+                return f"{report_url}{suffix}"
 
-        status_test = {}
-        has_any_log = set()
+        line = [
+            title,
+            render_pm(sum(map(len, tests.values())), mk_url()),
+            render_pm(len(tests[SummaryStatus.PASS]), mk_url("#PASS")),
+            render_pm(len(tests[SummaryStatus.ERROR]), mk_url("#ERROR")),
+            render_pm(len(tests[SummaryStatus.FAIL]), mk_url("#FAIL")),
+            render_pm(len(tests[SummaryStatus.SKIP]), mk_url("#SKIP")),
+            render_pm(len(tests[SummaryStatus.MUTE]), mk_url("#MUTE")),
+        ]
+        return self.render_line(line)
 
-        for t in rows:
-            status_test.setdefault(t.status, []).append(t)
-            if any(t.log_urls.values()):
-                has_any_log.add(t.status)
-
-        for status in status_test.keys():
-            status_test[status].sort(key=attrgetter("full_name"))
-
-        status_order = [SummaryStatus.ERROR, SummaryStatus.FAIL, SummaryStatus.SKIP, SummaryStatus.MUTE, SummaryStatus.PASS]
-
-        # remove status group without tests
-        status_order = [s for s in status_order if s in status_test]
-
-        content = env.get_template("summary.html").render(
-            status_order=status_order, tests=status_test, has_any_log=has_any_log
-        )
-
-        with open(path, "w") as fp:
-            fp.write(content)
-
-    def render_badge(self, report_url: str, add_footnote=False):
+    def render_badge(self, report_urls: Dict[str, str], add_footnote=False):
         footnote_url = f"{self.cfg.gh_repo}/tree/main/.github/config/muted_ya.txt"
         footnote = "[^1]" if add_footnote else f'<sup>[?]({footnote_url} "All mute rules are defined here")</sup>'
 
-        columns = [
-            "TESTS", "PASSED", "ERRORS", "FAILED", "SKIPPED", f"MUTED{footnote}"
-        ]
+        columns = ["", "TESTS", "PASSED", "ERRORS", "FAILED", "SKIPPED", f"MUTED{footnote}"]
 
         result = [
             self.render_line(columns),
-            self.render_line(['---:'] * len(columns))
+            self.render_line(["---:"] * len(columns)),
+            # self.render_counters("Build", self.builds, report_urls.get('build')),
+            self.render_counters("Style", self.styles, report_urls.get("styles")),
+            self.render_counters("Test", self.tests, report_urls.get("tests")),
         ]
-
-        row = []
-
-        row.extend([
-            render_pm(sum(self.counter.values()), f"{report_url}", 0),
-            render_pm(self.counter[SummaryStatus.PASS], f"{report_url}#PASS", 0),
-            render_pm(self.counter[SummaryStatus.ERROR], f"{report_url}#ERROR", 0),
-            render_pm(self.counter[SummaryStatus.FAIL], f"{report_url}#FAIL", 0),
-            render_pm(self.counter[SummaryStatus.SKIP], f"{report_url}#SKIP", 0),
-            render_pm(self.counter[SummaryStatus.MUTE], f"{report_url}#MUTE", 0),
-        ])
-        result.append(self.render_line(row))
 
         if add_footnote:
             result.append("")
             result.append(f"[^1]: All mute rules are defined [here]({footnote_url}).")
         return result
 
+    def generate_reports(self):
+        return {
+            # 'builds': self._generate_report(self.builds, StringIO()),
+            "styles": self._generate_report(self.styles),
+            "tests": self._generate_report(self.tests),
+        }
+
+    def _generate_report(self, tests):
+        env = Environment(loader=FileSystemLoader(TEMPLATES_PATH), undefined=StrictUndefined)
+
+        status_order = [
+            SummaryStatus.ERROR,
+            SummaryStatus.FAIL,
+            SummaryStatus.SKIP,
+            SummaryStatus.MUTE,
+            SummaryStatus.PASS,
+        ]
+
+        status_order = [s for s in status_order if s in tests]
+
+        content = env.get_template("summary.html").render(status_order=status_order, tests=tests)
+
+        fp = BytesIO()
+
+        fp.write(content.encode('utf8'))
+        fp.seek(0)
+        return fp
+
+    def upload_to_s3(self, s3_client, reports):
+        urls = {}
+        folder = "summary"
+
+        extra_args = {
+            "ACL": "public-read",
+            "ContentType": "text/html",
+            "ContentEncoding": "gzip",
+        }
+
+        for report_type, report in reports.items():
+            urls[report_type] = f"{self.cfg.s3_url_prefix}/{folder}/{report_type}.html"
+            with GzipCompressionWrapper(report) as zfp:
+                s3_client.upload_fileobj(
+                    zfp,
+                    self.cfg.s3_bucket,
+                    self.cfg.s3_bucket.join(f"{folder}/{report_type}.html"),
+                    ExtraArgs=extra_args,
+                )
+        return urls
+
+    def save_reports(self, reports, folder, prefix):
+        urls = {}
+        for report_type, report in reports.items():
+            urls[report_type] = f"{prefix}/reports/{report_type}.html"
+            fn = Path(folder).joinpath(f"{report_type}.html")
+            with open(fn, "wb") as fp:
+                shutil.copyfileobj(report, fp)
+        return urls
