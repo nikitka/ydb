@@ -17,8 +17,8 @@ inputs:
   
   test_type:
     required: false
-    default: "unittest,py3test,py2test,pytest"
-    description: "run "
+    default: "unittest,py3test,py2test,pytest,clang_tidy,py2_flake8,flake8,black"
+    description: "comma separated list of tests for run"
   
   test_threads:
     required: false
@@ -258,7 +258,6 @@ runs:
         /home/gh/ve/bin/python ydb/ci/gh-report/report.py testmo sink --state "$TESTMO_STATE_FILE" --s3 \
           --github-repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --github-sha "${GITHUB_SHA:0:7}" \
           --mute-conf .github/config/muted_ya.txt \
-          --summary-out-path "$ARTIFACTS_DIR/summary/" --summary-url-prefix $S3_URL_PREFIX/summary/ \
           --badge-out-path "$BADGE_OUT_PATH" \
           --basedir "$OUT_DIR" --input $LOG_DIR/test_report.jsonl
         

@@ -1,13 +1,16 @@
 import logging
 
-from .base import YaBuild, YaTestSuite
+from .base import YaLogItem, YaTestSuite
 
 
 class BaseSink:
     def submit_suite(self, suite: YaTestSuite):
         pass
 
-    def submit_build(self, build: YaBuild):
+    def submit_build(self, build: YaLogItem):
+        pass
+
+    def submit_style(self, build: YaTestSuite):
         pass
 
     def flush(self, force=False):
@@ -24,5 +27,9 @@ class ConsoleSink(BaseSink):
     def submit_suite(self, suite: YaTestSuite):
         self.logger.info("submit-suite: %s", suite)
 
-    def submit_build(self, build: YaBuild):
-        self.logger.info("submit-build: %s", build)
+    def submit_build(self, build: YaLogItem):
+        pass
+        # self.logger.info("submit-build: %s", build)
+
+    def submit_style(self, suite: YaTestSuite):
+        self.logger.info("submit-style: %s", suite)

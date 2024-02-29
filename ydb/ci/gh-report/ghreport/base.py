@@ -26,6 +26,11 @@ class YaErrorType(enum.Enum):
     INTERNAL = "INTERNAL"
 
 
+class YaTestType(enum.Enum):
+    TEST = "test"
+    STYLE = "style"
+
+
 @dataclasses.dataclass
 class UploadedFile:
     name: str
@@ -56,6 +61,7 @@ class YaTest:
     name: str
     subtest_name: str
     path: str
+    type: YaTestType
 
     status: YaStatus
     error_type: str
@@ -69,18 +75,28 @@ class YaTest:
 
     @classmethod
     def parse_json(cls, data):
+        name = data['name']
+        path = data["path"]
+
         status = YaStatus(data["status"])
+        test_type = YaTestType(data['type'])
         duration = data["duration"] or 0
 
         rich_snippet = data.get("rich-snippet")
         if rich_snippet:
             rich_snippet = MARKUP_PATTERN.sub("", rich_snippet).strip()
 
+        if test_type == YaTestType.STYLE:
+            if path.endswith(name):
+                # ydb/tests/fq/s3/test_file.py becomes ydb/tests/fq/s3
+                path = path[:-(len(name) + 1)]
+
         return cls(
             data["chunk_id"],
-            data["name"],
+            name,
             data["subtest_name"],
-            data["path"],
+            path,
+            test_type,
             status,
             data.get("error_type"),
             duration,
@@ -97,8 +113,25 @@ class YaTest:
         return self.status == YaStatus.FAILED
 
     @property
+    def is_style(self):
+        return self.type == YaTestType.STYLE
+
+    @property
     def full_name(self):
         return f"{self.name}.{self.subtest_name}"
+
+    @property
+    def duration_display(self):
+        m, s = divmod(self.duration, 60)
+        parts = []
+        if m > 0:
+            parts.append(f'{int(m)}m')
+        parts.append(f"{s:.3f}s")
+        return ' '.join(parts)
+
+    @property
+    def status_display(self):
+        return self.status.value
 
     def add_link_url(self, link: UploadedFile):
         self.uploaded_links.append(link)
@@ -169,10 +202,12 @@ class YaTestChunk:
 
 class YaTestSuite:
     def __init__(
-        self, id_: str, path: str, status: YaStatus, error_type: Optional[YaErrorType]
+        self, id_: str, name: str, path: str, test_type: YaTestType, status: YaStatus, error_type: Optional[YaErrorType]
     ):
         self.id = id_
+        self.name = name
         self.path = path
+        self.type = test_type
         self.status = status
         self.error_type = error_type
         self.chunks = []  # type: List[YaTestChunk]
@@ -186,7 +221,9 @@ class YaTestSuite:
         if "error_type" in data:
             error_type = YaErrorType(data["error_type"])
 
-        return cls(data["id"], data["path"], status, error_type)
+        test_type = YaTestType(data['type'])
+
+        return cls(data["id"], data['name'], data["path"], test_type, status, error_type)
 
     def add_chunk(self, chunk: YaTestChunk):
         self.chunks.append(chunk)
@@ -204,20 +241,16 @@ class YaTestSuite:
                 yield test
 
     def __str__(self):
-        return f"TestSuite(path={self.path},status={self.status},tests={self.test_count},error_type={self.error_type})"
+        return f"TestSuite(name={self.name},path={self.path},status={self.status},type={self.type}, tests={self.test_count},error_type={self.error_type})"
 
 
 @dataclasses.dataclass
-class YaBuild:
+class YaLogItem:
     path: str
     status: YaStatus
     error_type: Optional[YaErrorType] = None
     rich_snippet: Optional[str] = None
     muted: bool = False
-
-    @property
-    def name(self):
-        return "BUILD"
 
     def mute(self):
         self.muted = True
@@ -225,6 +258,10 @@ class YaBuild:
     @property
     def failed(self):
         return self.status == YaStatus.FAILED
+
+    @property
+    def full_name(self):
+        return f"{self.path}"
 
     @classmethod
     def parse_json(cls, data):
