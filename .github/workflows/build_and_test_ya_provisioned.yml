@@ -29,12 +29,13 @@ on:
           - small,medium,large
       test_type:
         type: choice
-        default: "unittest,py3test,py2test,pytest"
+        default: "unittest,py3test,py2test,pytest,clang_tidy,py2_flake8,flake8,black"
         description: "type of tests to run"
         options:
           - unittest
           - py3test,py2test,pytest
           - unittest,py3test,py2test,pytest
+          - unittest,py3test,py2test,pytest,clang_tidy,py2_flake8,flake8,black
       run_build:
         type: boolean
         default: true
