@@ -1,5 +1,6 @@
 import os
 import enum
+import logging
 from io import BytesIO
 import shutil
 from pathlib import Path
@@ -11,6 +12,8 @@ from .base import YaTestSuite, YaStatus, YaErrorType, YaTestType
 from .utils import GzipCompressionWrapper
 
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "templates")
+
+logger = logging.getLogger(__name__)
 
 
 def render_pm(value, url=None, diff=None):
@@ -166,6 +169,7 @@ class SummarySink(BaseSink):
         for report_type, report in reports.items():
             urls[report_type] = f"{self.cfg.s3_url_prefix}/{folder}/{report_type}.html"
             with GzipCompressionWrapper(report) as zfp:
+                logger.info("upload %s to %s", report_type, urls[report_type])
                 s3_client.upload_fileobj(
                     zfp,
                     self.cfg.s3_bucket,
