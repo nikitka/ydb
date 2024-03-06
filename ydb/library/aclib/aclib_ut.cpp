@@ -24,7 +24,7 @@ Y_UNIT_TEST_SUITE(ACLib) {
 
         UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::SelectRow, jamesToken) != true);
         UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::SelectRow, catToken) != true);
-        UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::SelectRow, dogToken) == true);
+        UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::SelectRow, dogToken) != true);
         UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::UpdateRow, jamesToken) == true);
         UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::UpdateRow, catToken) == false);
         UNIT_ASSERT(rootACL.CheckAccess(EAccessRights::UpdateRow, dogToken) == true);
