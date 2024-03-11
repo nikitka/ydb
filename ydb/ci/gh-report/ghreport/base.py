@@ -57,7 +57,7 @@ def fix_links_paths(links):
 
 @dataclasses.dataclass
 class YaTest:
-    chunk_id: str
+    chunk_hid: str
     name: str
     subtest_name: str
     path: str
@@ -92,7 +92,7 @@ class YaTest:
                 path = path[:-(len(name) + 1)]
 
         return cls(
-            data["chunk_id"],
+            data["chunk_hid"],
             name,
             data["subtest_name"],
             path,
@@ -143,16 +143,16 @@ class YaTest:
 class YaTestChunk:
     def __init__(
         self,
-        suite_id: str,
-        id_: str,
+        suite_hid: str,
+        hid: str,
         name: str,
         subtest_name: str,
         path: str,
         status: YaStatus,
         logsdir_path: str,
     ):
-        self.suite_id = suite_id
-        self.id = id_
+        self.suite_hid = suite_hid
+        self.hid = hid
         self.name = name
         self.subtest_name = subtest_name
         self.path = path
@@ -175,8 +175,8 @@ class YaTestChunk:
             logsdir_path = links["logsdir"][0]
 
         return cls(
-            data["suite_id"],
-            data["id"],
+            data["suite_hid"],
+            data["hid"],
             data["name"],
             data["subtest_name"],
             data["path"],
@@ -202,9 +202,9 @@ class YaTestChunk:
 
 class YaTestSuite:
     def __init__(
-        self, id_: str, name: str, path: str, test_type: YaTestType, status: YaStatus, error_type: Optional[YaErrorType]
+        self, hid: str, name: str, path: str, test_type: YaTestType, status: YaStatus, error_type: Optional[YaErrorType]
     ):
-        self.id = id_
+        self.hid = hid
         self.name = name
         self.path = path
         self.type = test_type
@@ -223,7 +223,7 @@ class YaTestSuite:
 
         test_type = YaTestType(data['type'])
 
-        return cls(data["id"], data['name'], data["path"], test_type, status, error_type)
+        return cls(data["hid"], data['name'], data["path"], test_type, status, error_type)
 
     def add_chunk(self, chunk: YaTestChunk):
         self.chunks.append(chunk)

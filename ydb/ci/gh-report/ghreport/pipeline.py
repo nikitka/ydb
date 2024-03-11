@@ -82,26 +82,20 @@ class ParserPipeline:
 
             self.current_chunk = chunk
 
-            if self.current_chunk.suite_id != self.current_suite.id:
+            if self.current_chunk.suite_hid != self.current_suite.hid:
                 raise Exception("suite != current_suite")
 
             self.current_suite.add_chunk(chunk)
 
         else:
             test = YaTest.parse_json(data)
-            if test.chunk_id != self.current_chunk.id:
+            if test.chunk_hid != self.current_chunk.hid:
                 raise Exception("Chunk != current_chunk")
 
             self.current_chunk.add_test(test)
 
     def finish(self):
         self.on_suite_finished()
-
-    def on_style_finished(self, style: YaLogItem):
-        if style.status != YaStatus.OK and self.mute_check(style.path, "BUILD"):
-            style.mute()
-
-        self.submit_style(style)
 
     def on_build_finished(self, build: YaLogItem):
         if build.status != YaStatus.OK and self.mute_check(build.path, "BUILD"):
