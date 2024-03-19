@@ -5,6 +5,8 @@
 #include <util/string/split.h>
 #include <library/cpp/protobuf/util/is_equal.h>
 
+this is error!
+
 namespace NACLib {
 
 std::pair<ui32, ui32>& operator |=(std::pair<ui32, ui32>& a, const std::pair<ui32, ui32>& b) {
