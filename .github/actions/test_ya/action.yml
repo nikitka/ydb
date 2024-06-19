@@ -62,6 +62,9 @@ runs:
         echo "YA_TEST_LOG_URL=$S3_URL_PREFIX/test_logs/ya_test.log" >> $GITHUB_ENV
         echo "S3_LOG_BUCKET_PATH=$S3_BUCKET_PATH/test_logs" >> $GITHUB_ENV
         
+        echo "ALLURE_OUT_PATH=$TMP_DIR/allure/" >> $GITHUB_ENV
+        echo "ALLURE_URL=$S3_URL_PREFIX/allure/" >> $GITHUB_ENV
+        
     
     - name: prepare
       shell: bash
@@ -215,6 +218,7 @@ runs:
         ./ya test ${{ inputs.build_target }} "${params[@]}" \
           --stat --log-file "$YA_TEST_LOG_FILENAME" -DCONSISTENT_DEBUG \
           --no-dir-outputs \
+          --allure "$ALLURE_OUT_PATH" \
           --junit "$JUNIT_REPORT_XML" --output "$OUT_DIR" || (
             RC=$?
             if [ $RC -ne 0 ]; then
@@ -231,6 +235,8 @@ runs:
               fi
             fi
         )
+        
+        echo "20 [Allure report](${ALLURE_URL})" >> $SUMMARY_LINKS
 
     - name: archive unitest reports (orig)
       shell: bash
@@ -340,6 +346,7 @@ runs:
         echo "::group::s3-sync"
         s3cmd sync -r --follow-symlinks --acl-public --no-progress --stats --no-check-md5 "$ARTIFACTS_DIR/" "$S3_BUCKET_PATH/"
         s3cmd sync -r --follow-symlinks --acl-public --no-progress --stats --no-check-md5 "$TEST_ARTIFACTS_DIR/" "$S3_TEST_ARTIFACTS_BUCKET_PATH/"
+        s3cmd sync -r --follow-symlinks --acl-public --no-progress --stats --no-check-md5 "$ALLURE_PATH/" "$S3_BUCKET_PATH/allure/"
         echo "::endgroup::"
     
     - name: check test results
