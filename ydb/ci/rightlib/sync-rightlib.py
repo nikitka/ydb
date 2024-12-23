@@ -22,7 +22,7 @@ class RightlibSync:
         self.token = token
         self.gh = Github(login_or_token=self.token)
         self.repo = self.gh.get_repo(self.repo_name)
-        self.dtm = self.get_dtm()
+        self.dtm = datetime.datetime.now().strftime("%y%m%d-%H%M")
         self.logger = logging.getLogger("sync")
         self.workflow_url = None
         self.detect_env()
@@ -33,9 +33,6 @@ class RightlibSync:
                 f"{os.environ['GITHUB_SERVER_URL']}/{self.repo_name}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
             )
 
-    def get_dtm(self):
-        return datetime.datetime.now().strftime("%y%m%d-%H%M")
-
     def rightlib_latest_repo_sha(self):
         return self.repo.get_branch("rightlib").commit.sha
 
@@ -45,9 +42,6 @@ class RightlibSync:
     def rightlib_latest_sync_commit(self):
         return self.rightlib_sha_file_contents(ref="main")
 
-    def get_pr_rightlib_sha(self, pr: PullRequest):
-        return self.rightlib_sha_file_contents(ref=pr.head.sha)
-
     def get_latest_open_pr(self) -> Optional[PullRequest]:
         query = f"label:{self.pr_label_rightlib} repo:{self.repo_name} is:pr state:open sort:created-desc"
         result = self.gh.search_issues(query).get_page(0)
@@ -55,27 +49,12 @@ class RightlibSync:
             return result[0].as_pull_request()
         return None
 
-    def check_rightlib_sha_has_status(self, pr: PullRequest):
-        sha = self.get_pr_rightlib_sha(pr)
-        statuses = [c for c in self.repo.get_commit(sha).get_statuses() if c.context == self.rightlib_check_status_name]
-        if not statuses:
-            return True
-        statuses.sort(key=attrgetter('id'))
-        # GitHub API doesn't call for remove commit status, so we ignore latest status if it is pending
-
-        return statuses[-1].state != "pending"
-
-    def set_rightlib_sha_status(self, pr: PullRequest, state: str, description: str):
-        sha = self.get_pr_rightlib_sha(pr)
-        self.logger.info("set state=%s for rightlib commit %s", state, sha)
-        self.repo.get_commit(sha).create_status(
-            context=self.rightlib_check_status_name, state=state, target_url=pr.html_url, description=description
-        )
-
     def check_opened_pr(self, pr: PullRequest):
-        self.logger.info("check opened pr %r", pr)
+        pr_labels = [l.name for l in pr.labels]
 
-        if self.pr_label_fail in pr.labels:
+        self.logger.info("check opened pr %r (labels %s)", pr, pr_labels)
+
+        if self.pr_label_fail in pr_labels:
             self.logger.info("pr has %s label, exit", self.pr_label_fail)
             return
 
@@ -93,16 +72,11 @@ class RightlibSync:
         if check.state == "failure":
             self.logger.info("%s check failed, check for rightlib commit has status", self.check_name)
 
-            if self.check_rightlib_sha_has_status(pr):
-                self.logger.info("rightlib commit already has status, exit")
-                return
-
-            self.add_failed_comment(pr, f"`{self.check_name}` failed, disabling future checks")
-            self.set_rightlib_sha_status(pr, "failure", f"`{self.check_name}` failed")
+            self.add_failed_comment(pr, f"Check `{self.check_name}` failed.")
+            self.add_pr_failed_label(pr)
             return
 
         elif check.state == "success":
-            self.set_rightlib_sha_status(pr, "success", f"`{self.check_name}` success")
             self.logger.info("check success, going to merge")
             self.merge_pr(pr)
         else:
@@ -138,8 +112,9 @@ class RightlibSync:
         pr.create_issue_comment(body=body)
 
     def add_failed_comment(self, pr: PullRequest, text: str):
+        text += f" All future check are suspended, please remove the `{self.pr_label_fail}` label to enable checks."
         if self.workflow_url:
-            text += f" Please see logs in the workflow [run]({self.workflow_url})."
+            text += f" Rightlib sync workflow logs can be found [here]({self.workflow_url})."
         pr.create_issue_comment(f"{self.failed_comment_mark}\n{text}")
 
     def git_run(self, *args):
@@ -197,8 +172,6 @@ class RightlibSync:
 
         pr = self.repo.create_pull("main", dev_branch_name, title=pr_title, body=pr_body)
         pr.add_to_labels(self.pr_label_rightlib)
-
-        self.set_rightlib_sha_status(pr, "pending", f"will be check in #{pr.number}")
 
 
     def sync(self):
