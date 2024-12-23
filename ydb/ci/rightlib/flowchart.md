@@ -1,11 +1,12 @@
 ```mermaid
 flowchart TB
-W[Workflow Start] --> CheckExistingPR{Is there<br/>an unmerged PR<br/>with rightlib<br/>labels?}
+W[Workflow Start] --> CheckExistingPR{Is there<br/>an unmerged PR<br/>with 'rightlib'<br/>label?}
 
-CheckExistingPR --> |No| RightlibCommitCheck{New commits<br>in rightlib?}
+CheckExistingPR --> |No| RightlibCommitCheck{New commits<br>in rightlib branch?}
     RightlibCommitCheck --> |No| Finish
     RightlibCommitCheck --> |Yes| CreatePR[Create a new PR]
-        CreatePR --> SetRightlibCommitStatusPending[Set rightlib<br/>commit status<br/> as Pending]
+        CreatePR --> AddRightlibLabel[Add 'rightlib'<br/> label]
+    AddRightlibLabel --> SetRightlibCommitStatusPending[Set latest rightlib<br/>commit status<br/> as Pending]
             SetRightlibCommitStatusPending --> Finish[Finish workflow]
 
 CheckExistingPR --> |Yes| CheckPrFailedLabel{Check PR has<br/>failed label}
