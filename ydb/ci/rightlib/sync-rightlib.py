@@ -107,9 +107,6 @@ class RightlibSync:
         else:
             self.logger.info("wait for success")
 
-    def add_pr_failed_label(self, pr: PullRequest):
-        pr.add_to_labels(self.pr_label_fail)
-
     def git_merge_pr(self, pr: PullRequest):
         self.git_run("clone", f"https://{self.token}@github.com/{self.repo_name}.git", "merge-repo")
         os.chdir("merge-repo")
@@ -120,13 +117,13 @@ class RightlibSync:
             self.git_run("merge", "PR", "--no-edit")
         except subprocess.CalledProcessError:
             self.add_failed_comment(pr, "Unable to merge PR")
-            self.add_pr_failed_label(pr)
+            pr.add_to_labels(self.pr_label_fail)
 
         try:
             self.git_run("push")
         except subprocess.CalledProcessError:
             self.add_failed_comment(pr, "Unable to push merged revision")
-            self.add_pr_failed_label(pr)
+            pr.add_to_labels(self.pr_label_fail)
 
     def merge_pr(self, pr: PullRequest):
         self.logger.info("start merge %s into main", pr)
@@ -156,6 +153,20 @@ class RightlibSync:
 
     def git_revparse_head(self):
         return self.git_run("rev-parse", "HEAD").strip()
+
+    def gh_create_new_pr(self, base, head, title, body, labels):
+        # An undocumented way how to create PR with a labels without making extra query and triggering `labeled` actions
+        request = {
+                "base": base,
+                "head": head,
+                "title": title,
+                "body": body,
+                "labels": labels
+        }
+        # noinspection PyProtectedMember
+        requester = self.repo._requester
+        headers, data = requester.requestJsonAndCheck("POST", f"{self.repo.url}/pulls", input=request)
+        return PullRequest(requester, headers, data, completed=True)
 
     def create_new_pr(self):
         dev_branch_name = f"merge-libs-{self.dtm}"
@@ -194,8 +205,7 @@ class RightlibSync:
         else:
             pr_body = f"PR was created by rightlib sync script"
 
-        pr = self.repo.create_pull("main", dev_branch_name, title=pr_title, body=pr_body)
-        pr.add_to_labels(self.pr_label_rightlib)
+        pr = self.gh_create_new_pr("main", dev_branch_name, pr_title, pr_body, [self.pr_label_rightlib])
 
         self.set_rightlib_sha_status(pr, "pending", f"will be check in #{pr.number}")
 
