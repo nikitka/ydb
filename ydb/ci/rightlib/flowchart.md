@@ -6,17 +6,13 @@ CheckExistingPR --> |No| RightlibCommitCheck{New commits<br>in rightlib branch?}
     RightlibCommitCheck --> |No| Finish
     RightlibCommitCheck --> |Yes| CreatePR[Create a new PR]
         CreatePR --> AddRightlibLabel[Add 'rightlib'<br/> label]
-    AddRightlibLabel --> SetRightlibCommitStatusPending[Set latest rightlib<br/>commit status<br/> as Pending]
-            SetRightlibCommitStatusPending --> Finish[Finish workflow]
+        AddRightlibLabel --> Finish[Finish workflow]
 
 CheckExistingPR --> |Yes| CheckPrFailedLabel{Check PR has<br/>failed label}
 CheckPrFailedLabel --> |Yes| Finish
 CheckPrFailedLabel --> |No| CheckPRChecks{Check PR<br/>checks}
-CheckPRChecks --> |Failed| CheckRightlibCommitStatus{Check rightlib<br/>commit status}
-CheckRightlibCommitStatus --> |Pending| FailedComment[Failed comment]
-FailedComment --> MarkRefCommitAsFailed[set rightlib<br/>commit status<br/> as failed]
-MarkRefCommitAsFailed --> Finish
-CheckRightlibCommitStatus --> |Failed| Finish
+CheckPRChecks --> |Failed| FailedComment[Failed comment]
+FailedComment --> AddPrFailedLabel
 
 CheckPRChecks --> |Pending| Finish
 
@@ -24,7 +20,7 @@ CheckPRChecks --> |Success| MergePR[Merge PR branch]
 MergePR --> IsMergeSuccess{Is merge<br/>success?}
 IsMergeSuccess --> |Yes| Push
 Push --> IsPushSuccess{Is Push<br/>success}
-IsPushSuccess --> |Yes| AutoPRClose[PR closes<br/>automatically] --> Finish
+IsPushSuccess --> |Yes| AutoPRClose[PR closes<br/>automatically]
 AutoPRClose -->  SuccessComment[Success comment] --> Finish
 
 IsMergeSuccess --> |No| FailedMergeComment[Failed comment]
