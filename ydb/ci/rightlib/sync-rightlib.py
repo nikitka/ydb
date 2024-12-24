@@ -17,8 +17,9 @@ class RightlibSync:
     failed_comment_mark = "<!--RightLibSyncFailed-->"
     rightlib_check_status_name = "rightlib-merge"
 
-    def __init__(self, repo, token):
+    def __init__(self, repo, target_branch, token):
         self.repo_name = repo
+        self.target_branch = target_branch
         self.token = token
         self.gh = Github(login_or_token=self.token)
         self.repo = self.gh.get_repo(self.repo_name)
@@ -40,7 +41,7 @@ class RightlibSync:
         return self.repo.get_contents(self.rightlib_sha_file, ref=ref).decoded_content.decode().strip()
 
     def rightlib_latest_sync_commit(self):
-        return self.rightlib_sha_file_contents(ref="main")
+        return self.rightlib_sha_file_contents(ref=self.target_branch)
 
     def get_latest_open_pr(self) -> Optional[PullRequest]:
         query = f"label:{self.pr_label_rightlib} repo:{self.repo_name} is:pr state:open sort:created-desc"
@@ -89,7 +90,7 @@ class RightlibSync:
         self.git_run("clone", f"https://{self.token}@github.com/{self.repo_name}.git", "merge-repo")
         os.chdir("merge-repo")
         self.git_run("fetch", "origin", f"pull/{pr.number}/head:PR")
-        self.git_run("checkout", "main")
+        self.git_run("checkout", self.target_branch)
 
         try:
             self.git_run("merge", "PR", "--no-edit")
@@ -145,7 +146,7 @@ class RightlibSync:
 
         self.logger.info(f"{rightlib_sha=}")
 
-        self.git_run("checkout", "main")
+        self.git_run("checkout", self.target_branch)
         self.git_run(f"checkout", "-b", dev_branch_name)
 
         prev_sha = self.git_revparse_head()
@@ -170,9 +171,8 @@ class RightlibSync:
         else:
             pr_body = f"PR was created by rightlib sync script"
 
-        pr = self.repo.create_pull("main", dev_branch_name, title=pr_title, body=pr_body)
+        pr = self.repo.create_pull(self.target_branch, dev_branch_name, title=pr_title, body=pr_body)
         pr.add_to_labels(self.pr_label_rightlib)
-
 
     def sync(self):
         pr = self.get_latest_open_pr()
@@ -194,7 +194,7 @@ def main():
     logging.basicConfig(format=log_fmt, level=logging.DEBUG)
     repo = os.environ["REPO"]
     token = os.environ["TOKEN"]
-    syncer = RightlibSync(repo, token)
+    syncer = RightlibSync(repo, "main", token)
     syncer.sync()
 
 
